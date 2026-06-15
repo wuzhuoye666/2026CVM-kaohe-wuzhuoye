@@ -25,92 +25,92 @@
 
 ### 1.1 创建 PerfCollector 类骨架 (perf_collector.py)
 
-- [ ] 1.1.1 创建 `PerfCollector` 类，`__init__` 接收参数: `output_dir`, `freq=99`, `slice_sec=60`
-- [ ] 1.1.2 实现 `run_one_slice()` 方法: 构造并执行 `perf record -a -g -F {freq} -o {output_dir}/perf-{timestamp}.data -- sleep {slice_sec}`
-- [ ] 1.1.3 实现 `run()` 方法: while True 循环调用 `run_one_slice()`，捕获异常不打断循环，打印日志
-- [ ] 1.1.4 实现 `if __name__ == "__main__"` 入口: 解析命令行参数，实例化并运行
-- [ ] 1.1.5 采样文件命名格式: `perf-20260615_030500.data`（年月日_时分秒）
+- [x] 1.1.1 创建 `PerfCollector` 类，`__init__` 接收参数: `output_dir`, `freq=99`, `slice_sec=60`
+- [x] 1.1.2 实现 `run_one_slice()` 方法: 构造并执行 `perf record -a -g -F {freq} -o {output_dir}/perf-{timestamp}.data -- sleep {slice_sec}`
+- [x] 1.1.3 实现 `run()` 方法: while True 循环调用 `run_one_slice()`，捕获异常不打断循环，打印日志
+- [x] 1.1.4 实现 `if __name__ == "__main__"` 入口: 解析命令行参数，实例化并运行
+- [x] 1.1.5 采样文件命名格式: `perf-20260615_030500.data`（年月日_时分秒）
 
 **测试指标 1.1**:
-- [ ] 运行 `python3 -c "from collector.perf_collector import PerfCollector; p=PerfCollector('/tmp/test-data'); print(p)"` 无报错
-- [ ] 运行 `python3 -m collector.perf_collector --output-dir /tmp/test-data --freq 99 --slice 10`，等待15秒后Ctrl+C
-- [ ] `ls /tmp/test-data/perf-*.data` 至少有一个文件
-- [ ] 文件名格式匹配 `perf-YYYYMMDD_HHMMSS.data`
+- [x] 运行 `python3 -c "from collector.perf_collector import PerfCollector; p=PerfCollector('/tmp/test-data'); print(p)"` 无报错
+- [x] 运行 `python3 -m collector.perf_collector --output-dir /tmp/test-data --freq 99 --slice 10`，等待15秒后Ctrl+C
+- [x] `ls /tmp/test-data/perf-*.data` 至少有一个文件
+- [x] 文件名格式匹配 `perf-YYYYMMDD_HHMMSS.data`
 
 ---
 
 ### 1.2 元数据索引 (metadata.py)
 
-- [ ] 1.2.1 创建 `MetadataStore` 类，`__init__` 接收 `filepath`（默认 `/data/metadata.json`）
-- [ ] 1.2.2 实现 `add_entry(file_path, start_time, end_time, size)` 方法: 追加一条记录到JSON数组
-- [ ] 1.2.3 实现 `query(start_time, end_time)` 方法: 返回所有与 [start_time, end_time] 时间范围有重叠的条目
-- [ ] 1.2.4 实现 `remove_before(cutoff_time)` 方法: 删除早于 cutoff_time 的条目
-- [ ] 1.2.5 实现 `all_entries()` 方法: 返回全部条目
-- [ ] 1.2.6 文件读写加锁（fcntl），防止collector和cleaner并发冲突
-- [ ] 1.2.7 每条记录格式: `{"file": "perf-20260615_030500.data", "start": "2026-06-15T03:05:00", "end": "2026-06-15T03:06:00", "size_mb": 1.2}`
+- [x] 1.2.1 创建 `MetadataStore` 类，`__init__` 接收 `filepath`（默认 `/data/metadata.json`）
+- [x] 1.2.2 实现 `add_entry(file_path, start_time, end_time, size)` 方法: 追加一条记录到JSON数组
+- [x] 1.2.3 实现 `query(start_time, end_time)` 方法: 返回所有与 [start_time, end_time] 时间范围有重叠的条目
+- [x] 1.2.4 实现 `remove_before(cutoff_time)` 方法: 删除早于 cutoff_time 的条目
+- [x] 1.2.5 实现 `all_entries()` 方法: 返回全部条目
+- [x] 1.2.6 文件读写加锁（fcntl），防止collector和cleaner并发冲突
+- [x] 1.2.7 每条记录格式: `{"file": "perf-20260615_030500.data", "start": "2026-06-15T03:05:00", "end": "2026-06-15T03:06:00", "size_mb": 1.2}`
 
 **测试指标 1.2**:
-- [ ] 单元测试: `python3 -c "from collector.metadata import MetadataStore; m=MetadataStore('/tmp/test-meta.json'); m.add_entry('f1','2026-06-15T03:00:00','2026-06-15T03:01:00',1.0); print(m.query('2026-06-15T03:00:30','2026-06-15T03:00:40'))"` 返回1条结果
-- [ ] 无重叠测试: query 一个完全不在范围内的时间，返回空列表
-- [ ] remove_before 测试: 添加3条记录，remove_before中间时间，只剩2条
+- [x] 单元测试: `python3 -c "from collector.metadata import MetadataStore; m=MetadataStore('/tmp/test-meta.json'); m.add_entry('f1','2026-06-15T03:00:00','2026-06-15T03:01:00',1.0); print(m.query('2026-06-15T03:00:30','2026-06-15T03:00:40'))"` 返回1条结果
+- [x] 无重叠测试: query 一个完全不在范围内的时间，返回空列表
+- [x] remove_before 测试: 添加3条记录，remove_before中间时间，只剩2条
 
 ---
 
 ### 1.3 将元数据写入集成到 PerfCollector
 
-- [ ] 1.3.1 在 `run_one_slice()` 中，执行完 perf record 后，调用 `metadata.add_entry()`
-- [ ] 1.3.2 start_time 取 perf 命令执行前时间，end_time 取 sleep 结束后时间
-- [ ] 1.3.3 size 取文件 stat 的字节数转为MB
+- [x] 1.3.1 在 `run_one_slice()` 中，执行完 perf record 后，调用 `metadata.add_entry()`
+- [x] 1.3.2 start_time 取 perf 命令执行前时间，end_time 取 sleep 结束后时间
+- [x] 1.3.3 size 取文件 stat 的字节数转为MB
 
 **测试指标 1.3**:
-- [ ] 运行 collector 2个采样周期（slice=10秒，等25秒）
-- [ ] `metadata.json` 中有2条记录
-- [ ] 每条记录的 file/start/end/size_mb 字段完整且合理
-- [ ] 两段时间连续（前一条end ≈ 后一条start）
+- [x] 运行 collector 2个采样周期（slice=10秒，等25秒）
+- [x] `metadata.json` 中有2条记录
+- [x] 每条记录的 file/start/end/size_mb 字段完整且合理
+- [x] 两段时间连续（前一条end ≈ 后一条start）
 
 ---
 
 ### 1.4 过期数据清理 (cleaner.py)
 
-- [ ] 1.4.1 创建 `DataCleaner` 类，`__init__` 接收 `data_dir`, `metadata_store`, `retention_hours=24`
-- [ ] 1.4.2 实现 `run_once()` 方法:
+- [x] 1.4.1 创建 `DataCleaner` 类，`__init__` 接收 `data_dir`, `metadata_store`, `retention_hours=24`
+- [x] 1.4.2 实现 `run_once()` 方法:
   - 计算截止时间 = now - retention_hours
   - 调用 `metadata_store.query("2020-01-01", 截止时间)` 获取过期条目
   - 删除对应的 .data 文件
   - 调用 `metadata_store.remove_before(截止时间)`
-- [ ] 1.4.3 实现 `run()` 方法: 每5分钟循环调用 `run_once()`
-- [ ] 1.4.4 删除文件前检查文件存在，删除失败打印警告但不中断
+- [x] 1.4.3 实现 `run()` 方法: 每5分钟循环调用 `run_once()`
+- [x] 1.4.4 删除文件前检查文件存在，删除失败打印警告但不中断
 
 **测试指标 1.4**:
-- [ ] 创建 `/tmp/test-clean/` 目录，放入一个 `perf-20260614_030000.data`（模拟26小时前的文件）
-- [ ] 往 `/tmp/test-clean-meta.json` 写入对应元数据
-- [ ] 运行 `cleaner.run_once()`，确认文件被删除、元数据被清理
-- [ ] 其他非过期文件不受影响
+- [x] 创建 `/tmp/test-clean/` 目录，放入一个 `perf-20260614_030000.data`（模拟26小时前的文件）
+- [x] 往 `/tmp/test-clean-meta.json` 写入对应元数据
+- [x] 运行 `cleaner.run_once()`，确认文件被删除、元数据被清理
+- [x] 其他非过期文件不受影响
 
 ---
 
 ### 1.5 入口脚本 (entrypoint.sh)
 
-- [ ] 1.5.1 脚本开头 `#!/bin/bash` + `set -euo pipefail`
-- [ ] 1.5.2 创建 `/data` 目录（如果不存在）
-- [ ] 1.5.3 设置内核参数: `echo 0 > /proc/sys/kernel/perf_event_paranoid`（如果可写）
-- [ ] 1.5.4 后台启动 collector: `python3 -m collector.perf_collector --output-dir /data --freq ${PERF_FREQ:-99} --slice ${SLICE_SEC:-60} &`
-- [ ] 1.5.5 后台启动 cleaner: `python3 -m collector.cleaner --data-dir /data --retention ${RETENTION_HOURS:-24} &`
-- [ ] 1.5.6 前台启动 API 服务器（先占位 `sleep infinity`，Step 4 替换为 gunicorn）
-- [ ] 1.5.7 `chmod +x entrypoint.sh`
+- [x] 1.5.1 脚本开头 `#!/bin/bash` + `set -euo pipefail`
+- [x] 1.5.2 创建 `/data` 目录（如果不存在）（注：已改为可配置DATA_DIR）
+- [x] 1.5.3 设置内核参数: `echo 0 > /proc/sys/kernel/perf_event_paranoid`（如果可写）
+- [x] 1.5.4 后台启动 collector: `python3 -m collector.perf_collector --output-dir /data --freq ${PERF_FREQ:-99} --slice ${SLICE_SEC:-60} &`
+- [x] 1.5.5 后台启动 cleaner: `python3 -m collector.cleaner --data-dir /data --retention ${RETENTION_HOURS:-24} &`
+- [x] 1.5.6 前台启动 API 服务器（先占位 `sleep infinity`，Step 4 替换为 gunicorn）
+- [x] 1.5.7 `chmod +x entrypoint.sh`
 
 **测试指标 1.5**:
-- [ ] 在宿主机直接运行 `bash entrypoint.sh`（需要root权限运行perf）
-- [ ] 等30秒后，`ls /data/perf-*.data` 有文件生成
-- [ ] `cat /data/metadata.json` 有对应条目
-- [ ] `ps aux | grep perf` 看到 perf record 进程在运行
+- [x] 在宿主机直接运行 `bash entrypoint.sh`（需要root权限运行perf）
+- [x] 等30秒后，`ls /data/perf-*.data` 有文件生成（注：需要设置DATA_DIR=/tmp/xxx测试）
+- [x] `cat /data/metadata.json` 有对应条目
+- [x] `ps aux | grep perf` 看到 perf record 进程在运行
 
 **Step 1 整体通过标准**:
-- [ ] 宿主机运行 entrypoint.sh，连续运行3分钟
-- [ ] 生成至少2个采样文件
-- [ ] metadata.json 条目正确且时间连续
-- [ ] 手动触发 cleaner 可正确清理过期文件
-- [ ] 整体 CPU 开销 < 2%（用 `top` 确认 perf + python 占用）
+- [x] 宿主机运行 entrypoint.sh，连续运行3分钟
+- [x] 生成至少2个采样文件
+- [x] metadata.json 条目正确且时间连续
+- [x] 手动触发 cleaner 可正确清理过期文件
+- [x] 整体 CPU 开销 < 2%（用 `top` 确认 perf + python 占用）
 
 ---
 
