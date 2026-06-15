@@ -24,6 +24,23 @@ echo "  DATA_DIR        = ${DATA_DIR}"
 # --- 创建数据目录 ---
 mkdir -p "${DATA_DIR}"
 
+# --- 检查 perf 二进制可用性 ---
+perf_bin=$(command -v perf 2>/dev/null || true)
+if [ -z "${perf_bin}" ]; then
+    # 尝试查找带版本号的 perf 并创建软链接
+    latest_perf=$(ls /usr/bin/perf_* 2>/dev/null | sort -V | tail -1 || true)
+    if [ -n "${latest_perf}" ]; then
+        ln -sf "${latest_perf}" /usr/local/bin/perf
+        perf_bin="/usr/local/bin/perf"
+        echo "  Linked ${latest_perf} -> /usr/local/bin/perf"
+    else
+        echo "FATAL: perf binary not found! Ensure linux-tools-common is installed,"
+        echo "       or rebuild image on a host matching the target kernel version."
+        exit 1
+    fi
+fi
+echo "  perf path = ${perf_bin} ($(${perf_bin} --version 2>&1 | head -1))"
+
 # --- 降低 perf 权限限制（如果可写）---
 if [ -w /proc/sys/kernel/perf_event_paranoid ]; then
     echo 0 > /proc/sys/kernel/perf_event_paranoid
