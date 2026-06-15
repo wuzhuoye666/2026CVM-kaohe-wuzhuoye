@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPU Profiling - 7x24 持续性能分析</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 系统概览栏 -->
+  <header id="system-bar">
+    <div class="brand">7&#215;24 CPU Profiler</div>
+    <div id="system-stats">
+      <div class="stat-item">
+        <span class="stat-label">CPU</span>
+        <span id="cpu-value" class="stat-value">--</span>
+        <div class="stat-bar"><div id="cpu-bar" class="stat-bar-fill"></div></div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">磁盘</span>
+        <span id="disk-value" class="stat-value">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">数据</span>
+        <span id="data-value" class="stat-value">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">文件</span>
+        <span id="files-value" class="stat-value">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">保留</span>
+        <span id="retention-value" class="stat-value">--</span>
+      </div>
+      <div class="stat-item">
+        <span id="collector-status" class="status-badge stopped">&#9679; 离线</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 时间线区 -->
+  <section id="timeline-section">
+    <div class="section-header">
+      <h2>采集时间线</h2>
+      <span id="selection-info" class="selection-info"></span>
+    </div>
+    <canvas id="timeline-canvas"></canvas>
+  </section>
+
+  <!-- 火焰图区 -->
+  <section id="flamegraph-section">
+    <div class="section-header">
+      <h2>火焰图</h2>
+      <div class="flame-toolbar">
+        <div class="view-toggle">
+          <button id="btn-svg" class="active" title="SVG 火焰图">SVG</button>
+          <button id="btn-d3" title="交互式火焰图">交互</button>
+        </div>
+        <div id="search-box" class="search-box hidden">
+          <input id="search-input" type="text" placeholder="搜索函数名...">
+          <button id="search-btn">搜索</button>
+          <button id="reset-zoom-btn" class="hidden">重置缩放</button>
+        </div>
+      </div>
+    </div>
+    <div id="flamegraph-container">
+      <div id="flamegraph-svg" class="flamegraph-view"></div>
+      <div id="flamegraph-d3" class="flamegraph-view hidden"></div>
+      <div id="flamegraph-loading" class="flamegraph-status hidden">
+        <div class="spinner"></div>
+        <span>正在生成火焰图...</span>
+      </div>
+      <div id="flamegraph-empty" class="flamegraph-status hidden">
+        <span>请在时间线上选择一个时间段查看火焰图</span>
+      </div>
+      <div id="flamegraph-error" class="flamegraph-status hidden">
+        <span id="error-message"></span>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-flame-graph@4/dist/d3-flamegraph.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/d3-flame-graph@4/dist/d3-flamegraph.css">
+  <script src="js/system.js"></script>
+  <script src="js/timeline.js"></script>
+  <script src="js/flamegraph.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -14,7 +14,7 @@
 | 2 | Docker 容器化 | [x] 完成 |
 | 3 | 火焰图生成后端 | [x] 完成 |
 | 4 | REST API 完整实现 | [x] 完成 |
-| 5 | Web 前端 | [ ] |
+| 5 | Web 前端 | [x] 完成 |
 | 6 | 测试验证 | [ ] |
 | 7 | 文档 + 镜像导出 | [ ] |
 | 8 | Git 历史 + 最终打磨 | [ ] |
@@ -327,8 +327,8 @@
 
 ### 5.1 基础页面框架 (index.html + style.css)
 
-- [ ] 5.1.1 index.html: 引入 style.css 和所有JS文件
-- [ ] 5.1.2 布局结构:
+- [x] 5.1.1 index.html: 引入 style.css 和所有JS文件
+- [x] 5.1.2 布局结构:
   ```
   ┌──────────────────────────────────┐
   │  系统概览栏 (cpu/磁盘/状态)      │
@@ -338,9 +338,9 @@
   │  火焰图区 (SVG嵌入/d3渲染)       │
   └──────────────────────────────────┘
   ```
-- [ ] 5.1.3 引入 d3-flame-graph CDN: `<script src="https://cdn.jsdelivr.net/npm/d3-flame-graph@4/dist/d3-flamegraph.min.js"></css>`
-- [ ] 5.1.4 引入 d3 v7 CDN: `<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>`
-- [ ] 5.1.5 style.css: 深色主题，火焰图区域占满宽度
+- [x] 5.1.3 引入 d3-flame-graph CDN
+- [x] 5.1.4 引入 d3 v7 CDN
+- [x] 5.1.5 style.css: 深色主题，火焰图区域占满宽度
 
 **测试指标 5.1**:
 - [ ] 浏览器访问 `http://localhost:8080/` 能看到三栏布局
@@ -351,10 +351,10 @@
 
 ### 5.2 系统概览组件 (system.js)
 
-- [ ] 5.2.1 实现 `SystemMonitor` 类/对象
-- [ ] 5.2.2 `fetch()`: 请求 `/api/system/status`，填充DOM元素
-- [ ] 5.2.3 `start()`: 每5秒调用 `fetch()`
-- [ ] 5.2.4 展示: CPU使用率(数字+颜色条)、磁盘占用、数据文件数、采集状态(绿/红点)
+- [x] 5.2.1 实现 `SystemMonitor` 类/对象
+- [x] 5.2.2 `fetch()`: 请求 `/api/system/status`，填充DOM元素
+- [x] 5.2.3 `start()`: 每5秒调用 `fetch()`
+- [x] 5.2.4 展示: CPU使用率(数字+颜色条)、磁盘占用、数据文件数、采集状态(绿/红点)
 
 **测试指标 5.2**:
 - [ ] 页面加载后1秒内显示系统信息
@@ -366,12 +366,12 @@
 
 ### 5.3 时间线组件 (timeline.js)
 
-- [ ] 5.3.1 实现 `Timeline` 类/对象
-- [ ] 5.3.2 用 Canvas 绘制过去24小时的采集色块（每个色块=1个采样文件）
-- [ ] 5.3.3 支持鼠标拖拽框选时间范围
-- [ ] 5.3.4 框选完成后，触发回调传出 `start_time`, `end_time`（ISO格式）
-- [ ] 5.3.5 显示当前选区的时间范围标注文字
-- [ ] 5.3.6 X轴标注时间刻度（每4小时一个刻度）
+- [x] 5.3.1 实现 `Timeline` 类/对象
+- [x] 5.3.2 用 Canvas 绘制过去24小时的采集色块（每个色块=1个采样文件）
+- [x] 5.3.3 支持鼠标拖拽框选时间范围
+- [x] 5.3.4 框选完成后，触发回调传出 `start_time`, `end_time`（ISO格式）
+- [x] 5.3.5 显示当前选区的时间范围标注文字
+- [x] 5.3.6 X轴标注时间刻度（每4小时一个刻度）
 
 **测试指标 5.3**:
 - [ ] 时间线显示已有采样文件的色块
@@ -383,11 +383,11 @@
 
 ### 5.4 火焰图展示 — SVG嵌入路径 (flamegraph.js)
 
-- [ ] 5.4.1 实现 `FlameGraphView` 类/对象
-- [ ] 5.4.2 时间线选区变化时，fetch `/api/flamegraph?start=...&end=...`
-- [ ] 5.4.3 将返回的SVG字符串 `innerHTML` 嵌入页面容器
-- [ ] 5.4.4 显示加载中状态（spinner）
-- [ ] 5.4.5 显示错误状态（"无采样数据"等提示）
+- [x] 5.4.1 实现 `FlameGraphView` 类/对象
+- [x] 5.4.2 时间线选区变化时，fetch `/api/flamegraph?start=...&end=...`
+- [x] 5.4.3 将返回的SVG字符串 `innerHTML` 嵌入页面容器
+- [x] 5.4.4 显示加载中状态（spinner）
+- [x] 5.4.5 显示错误状态（"无采样数据"等提示）
 
 **测试指标 5.4**:
 - [ ] 选择有数据的时间范围后，3秒内渲染出火焰图
@@ -399,10 +399,10 @@
 
 ### 5.5 d3-flame-graph交互渲染路径 (flamechart.js，加分项)
 
-- [ ] 5.5.1 fetch `/api/flamegraph/data?start=...&end=...` 获取层级JSON
-- [ ] 5.5.2 用 d3-flame-graph 渲染：支持搜索高亮、hover tooltip、点击缩放
-- [ ] 5.5.3 添加搜索框（输入函数名，高亮匹配栈帧）
-- [ ] 5.5.4 添加 Reset Zoom 按钮
+- [x] 5.5.1 fetch `/api/flamegraph/data?start=...&end=...` 获取层级JSON
+- [x] 5.5.2 用 d3-flame-graph 渲染：支持搜索高亮、hover tooltip、点击缩放
+- [x] 5.5.3 添加搜索框（输入函数名，高亮匹配栈帧）
+- [x] 5.5.4 添加 Reset Zoom 按钮
 
 **测试指标 5.5**:
 - [ ] 火焰图支持鼠标悬停显示函数名+采样数 tooltip

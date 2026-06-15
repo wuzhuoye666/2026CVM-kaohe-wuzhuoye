@@ -35,6 +35,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # 复制应用源码
 COPY api/ ./api/
 COPY collector/ ./collector/
+COPY frontend/ ./frontend/
 COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
 
