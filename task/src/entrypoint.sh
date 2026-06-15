@@ -67,4 +67,4 @@ fi
 echo "=== All services started ==="
 
 # --- 前台启动 API 服务器 ---
-exec gunicorn --bind 0.0.0.0:${PORT} --workers 2 "api.app:create_app()"
+exec gunicorn --bind 0.0.0.0:${PORT} --workers 2 --timeout 300 "api.app:create_app()"
