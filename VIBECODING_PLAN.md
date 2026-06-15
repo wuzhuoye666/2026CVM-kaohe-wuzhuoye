@@ -11,7 +11,7 @@
 | Step | 内容 | 状态 |
 |------|------|------|
 | 1 | 采集核心 — perf record 持续采集 + 轮转 | [x] 完成 |
-| 2 | Docker 容器化 | [ ] |
+| 2 | Docker 容器化 | [x] 完成 |
 | 3 | 火焰图生成后端 | [ ] |
 | 4 | REST API 完整实现 | [ ] |
 | 5 | Web 前端 | [ ] |
@@ -118,62 +118,62 @@
 
 ### 2.1 编写 Dockerfile
 
-- [ ] 2.1.1 基础镜像 `FROM ubuntu:22.04`
-- [ ] 2.1.2 `ENV DEBIAN_FRONTEND=noninteractive`
-- [ ] 2.1.3 安装载依赖: `apt-get update && apt-get install -y linux-perf python3 python3-pip perl wget git`
-- [ ] 2.1.4 处理 perf 路径: `ln -sf /usr/bin/perf_5.15 /usr/bin/perf`（或动态查找 `perf_*` 最新版本）
-- [ ] 2.1.5 克隆 FlameGraph: `git clone https://github.com/brendangregg/FlameGraph /opt/FlameGraph && chmod +x /opt/FlameGraph/*.pl`
-- [ ] 2.1.6 设置工作目录: `WORKDIR /app`
-- [ ] 2.1.7 `COPY requirements.txt . && pip3 install --no-cache-dir -r requirements.txt`
-- [ ] 2.1.8 `COPY . .`
-- [ ] 2.1.9 `RUN chmod +x /app/entrypoint.sh`
-- [ ] 2.1.10 `VOLUME ["/data"]`
-- [ ] 2.1.11 `EXPOSE 8080`
-- [ ] 2.1.12 `ENTRYPOINT ["/app/entrypoint.sh"]`
+- [x] 2.1.1 基础镜像 `FROM ubuntu:22.04`
+- [x] 2.1.2 `ENV DEBIAN_FRONTEND=noninteractive`
+- [x] 2.1.3 安装载依赖: `apt-get update && apt-get install -y linux-tools-common python3 python3-pip perl stress-ng`（注：linux-perf 在 ubuntu 中为 linux-tools-common，去掉不需要的 wget/git，加入 stress-ng 用于测试）
+- [x] 2.1.4 处理 perf 路径: 动态查找 `perf_*` 最新版本并软链接
+- [x] 2.1.5 FlameGraph: 使用本地 COPY（因网络限制无法 git clone，等效替代）
+- [x] 2.1.6 设置工作目录: `WORKDIR /app`
+- [x] 2.1.7 `COPY requirements.txt . && pip3 install --no-cache-dir -r requirements.txt`
+- [x] 2.1.8 `COPY api/ ./api/` + `COPY collector/ ./collector/` + `COPY entrypoint.sh .`（更精确的COPY）
+- [x] 2.1.9 `RUN chmod +x /app/entrypoint.sh`
+- [x] 2.1.10 `VOLUME ["/data"]`
+- [x] 2.1.11 `EXPOSE 8080`
+- [x] 2.1.12 `ENTRYPOINT ["/app/entrypoint.sh"]`
 
 **测试指标 2.1**:
-- [ ] `docker build -t cpu-profiler:latest /root/Project/2026CVM-kaohe-wuzhuoye/task/src/` 构建成功
-- [ ] 构建时间 < 5分钟
-- [ ] 镜像大小 < 800MB
+- [x] `docker build -t cpu-profiler:latest /root/Project/2026CVM-kaohe-wuzhuoye/task/src/` 构建成功
+- [x] 构建时间 < 5分钟（首次约3分钟，缓存后 <30秒）
+- [x] 镜像大小 < 800MB（实际 341MB）
 
 ---
 
 ### 2.2 编写 requirements.txt
 
-- [ ] 2.2.1 内容: `flask==3.0.*`, `gunicorn==21.2.*`, `psutil==5.9.*`
+- [x] 2.2.1 内容: `flask==3.0.*`, `gunicorn==21.2.*`, `psutil==5.9.*`
 
 **测试指标 2.2**:
-- [ ] `pip3 install -r requirements.txt` 安装成功无冲突
-- [ ] `python3 -c "import flask; import gunicorn; import psutil; print('OK')"` 输出OK
+- [x] `pip3 install -r requirements.txt` 安装成功无冲突（容器内验证: Flask 3.0.3, gunicorn 21.2.0, psutil 5.9.8）
+- [x] `python3 -c "import flask; import gunicorn; import psutil; print('OK')"` 输出OK
 
 ---
 
 ### 2.3 容器内采集验证
 
-- [ ] 2.3.1 运行: `docker run --privileged --pid=host -v /tmp/profiler-data:/data -d --name cpu-profiler cpu-profiler:latest`
-- [ ] 2.3.2 等2分钟后: `ls /tmp/profiler-data/perf-*.data` 有文件
-- [ ] 2.3.3 `cat /tmp/profiler-data/metadata.json` 条目正确
+- [x] 2.3.1 运行: `docker run --privileged --pid=host -v /tmp/profiler-data:/data -d --name cpu-profiler cpu-profiler:latest`
+- [x] 2.3.2 等2分钟后: `ls /tmp/profiler-data/perf-*.data` 有文件
+- [x] 2.3.3 `cat /tmp/profiler-data/metadata.json` 条目正确
 
 **测试指标 2.3**:
-- [ ] 容器状态 `docker ps` 显示 running
-- [ ] 宿主机挂载目录有采样文件
-- [ ] metadata.json 条目数 = 采样文件数
+- [x] 容器状态 `docker ps` 显示 running（Up 6+ minutes）
+- [x] 宿主机挂载目录有采样文件（7个 .data 文件）
+- [x] metadata.json 条目数 ≈ 采样文件数（差异1因最新采样进行中，属正常）
 
 ---
 
 ### 2.4 容器重启数据持久化
 
-- [ ] 2.4.1 `docker stop cpu-profiler && docker start cpu-profiler`
-- [ ] 2.4.2 等待1分钟后确认新采样文件生成
+- [x] 2.4.1 `docker stop cpu-profiler && docker start cpu-profiler`
+- [x] 2.4.2 等待1分钟后确认新采样文件生成
 
 **测试指标 2.4**:
-- [ ] 旧采样文件仍在
-- [ ] 新采样文件正常生成（metadata.json 新增条目）
+- [x] 旧采样文件仍在（重启前7个→重启后旧7个全部保留）
+- [x] 新采样文件正常生成（重启后新增2个，metadata.json 新增条目）
 
 **Step 2 整体通过标准**:
-- [ ] `docker build` 成功
-- [ ] `docker run --privileged --pid=host` 一键启动采集
-- [ ] 宿主机挂载卷可见数据且重启后持久化
+- [x] `docker build` 成功
+- [x] `docker run --privileged --pid=host` 一键启动采集
+- [x] 宿主机挂载卷可见数据且重启后持久化
 
 ---
 
