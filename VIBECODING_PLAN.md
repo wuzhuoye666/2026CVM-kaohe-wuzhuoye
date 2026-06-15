@@ -17,7 +17,7 @@
 | 5 | Web 前端 | [x] 完成 |
 | 6 | 测试验证 | [x] 完成 |
 | 7 | 文档 + 镜像导出 | [x] 完成 |
-| 8 | Git 历史 + 最终打磨 | [ ] |
+| 8 | Git 历史 + 最终打磨 | [x] 完成 |
 
 ---
 
@@ -526,41 +526,41 @@
 
 ### 8.1 整理 Git 提交历史
 
-- [ ] 8.1.1 确认每个Step有对应commit
-- [ ] 8.1.2 commit message 格式: `feat: xxx`, `fix: xxx`, `docs: xxx`
-- [ ] 8.1.3 推送到远程: `git push origin main`
+- [x] 8.1.1 确认每个Step有对应commit
+- [x] 8.1.2 commit message 格式: `feat: xxx`, `fix: xxx`, `docs: xxx`
+- [x] 8.1.3 推送到远程: `git push origin main`
 
 **测试指标 8.1**:
-- [ ] `git log --oneline | wc -l` >= 8
-- [ ] 每条commit message语义清晰
+- [x] `git log --oneline | wc -l` >= 8
+- [x] 每条commit message语义清晰
 
 ---
 
 ### 8.2 保存 AI 对话记录
 
-- [ ] 8.2.1 导出关键对话到 `task/ai-chat-log/`
-- [ ] 8.2.2 文件命名: `session-step1.md`, `session-step2.md` 等
+- [x] 8.2.1 导出关键对话到 `task/ai-chat-log/`
+- [x] 8.2.2 文件命名: `session-step1.md`, `session-step2.md` 等
 
 **测试指标 8.2**:
-- [ ] `ls task/ai-chat-log/` 非空
-- [ ] 至少包含3个步骤的对话记录
+- [x] `ls task/ai-chat-log/` 非空
+- [x] 至少包含3个步骤的对话记录
 
 ---
 
 ### 8.3 最终全流程验证
 
-- [ ] 8.3.1 模拟评审方: `git clone` → `docker load` → `docker run` → 浏览器访问 → 回查时间 → 生成火焰图
-- [ ] 8.3.2 记录启动到可用的时间
-- [ ] 8.3.3 确认所有功能正常
+- [x] 8.3.1 模拟评审方: `git clone` → `docker load` → `docker run` → 浏览器访问 → 回查时间 → 生成火焰图
+- [x] 8.3.2 记录启动到可用的时间
+- [x] 8.3.3 确认所有功能正常
 
 **测试指标 8.3**:
-- [ ] 全流程0报错
-- [ ] 从clone到看到火焰图 < 5分钟
+- [x] 全流程0报错
+- [x] 从clone到看到火焰图 < 5分钟
 
 **Step 8 整体通过标准**:
-- [ ] 仓库公开可克隆
-- [ ] 提交历史体现开发过程
-- [ ] 全流程丝滑无阻
+- [x] 仓库公开可克隆
+- [x] 提交历史体现开发过程
+- [x] 全流程丝滑无阻
 
 ---
 
