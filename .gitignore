@@ -1,0 +1,12 @@
+*.pyc
+__pycache__/
+*.data
+*.tar
+profiler.tar
+.env
+.venv/
+node_modules/
+dist/
+.DS_Store
+*.swp
+*.swo
