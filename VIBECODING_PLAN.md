@@ -13,7 +13,7 @@
 | 1 | 采集核心 — perf record 持续采集 + 轮转 | [x] 完成 |
 | 2 | Docker 容器化 | [x] 完成 |
 | 3 | 火焰图生成后端 | [x] 完成 |
-| 4 | REST API 完整实现 | [ ] |
+| 4 | REST API 完整实现 | [x] 完成 |
 | 5 | Web 前端 | [ ] |
 | 6 | 测试验证 | [ ] |
 | 7 | 文档 + 镜像导出 | [ ] |
@@ -232,60 +232,60 @@
 
 ### 4.1 Flask app 工厂 (app.py)
 
-- [ ] 4.1.1 实现 `create_app()` 工厂函数
-- [ ] 4.1.2 注册蓝图: `profiles_bp`, `flamegraph_bp`, `system_bp`
-- [ ] 4.1.3 配置 Flask 静态文件服务: `static_folder="../frontend"`, `static_url_path="/"`
-- [ ] 4.1.4 添加根路由 `/` 返回 `index.html`
-- [ ] 4.1.5 配置 CORS（如有跨域需求）
+- [x] 4.1.1 实现 `create_app()` 工厂函数
+- [x] 4.1.2 注册蓝图: `profiles_bp`, `flamegraph_bp`, `system_bp`
+- [x] 4.1.3 配置 Flask 静态文件服务: `static_folder="../frontend"`, `static_url_path="/"`
+- [x] 4.1.4 添加根路由 `/` 返回 `index.html`
+- [x] 4.1.5 配置 CORS（如有跨域需求）
 
 **测试指标 4.1**:
-- [ ] `python3 -c "from api.app import create_app; app=create_app(); print(app.url_map)"` 无报错
-- [ ] `flask --app api.app run` 启动无报错
-- [ ] `curl http://localhost:5000/` 返回200
+- [x] `python3 -c "from api.app import create_app; app=create_app(); print(app.url_map)"` 无报错
+- [x] `flask --app api.app run` 启动无报错
+- [x] `curl http://localhost:5000/` 返回200
 
 ---
 
 ### 4.2 采样数据查询API (routes_profiles.py)
 
-- [ ] 4.2.1 创建蓝图 `profiles_bp = Blueprint('profiles', __name__, url_prefix='/api/profiles')`
-- [ ] 4.2.2 实现 `GET /api/profiles?start=...&end=...`
+- [x] 4.2.1 创建蓝图 `profiles_bp = Blueprint('profiles', __name__, url_prefix='/api/profiles')`
+- [x] 4.2.2 实现 `GET /api/profiles?start=...&end=...`
   - 调用 `find_profiles(start, end)` 获取文件列表
   - 返回 JSON: `{"files": [...], "count": N, "start": "...", "end": "..."}`
-- [ ] 4.2.3 参数缺失时返回 400 + 错误信息
-- [ ] 4.2.4 日期格式非法时返回 400 + 错误信息
+- [x] 4.2.3 参数缺失时返回 400 + 错误信息
+- [x] 4.2.4 日期格式非法时返回 400 + 错误信息
 
 **测试指标 4.2**:
-- [ ] `curl "http://localhost:5000/api/profiles?start=2026-06-15T00:00:00&end=2026-06-15T23:59:59"` 返回200 + JSON
-- [ ] 无 start 参数返回 400
-- [ ] 非法日期格式返回 400
-- [ ] 无匹配时间范围返回 `{"files": [], "count": 0}`
+- [x] `curl "http://localhost:5000/api/profiles?start=2026-06-15T00:00:00&end=2026-06-15T23:59:59"` 返回200 + JSON
+- [x] 无 start 参数返回 400
+- [x] 非法日期格式返回 400
+- [x] 无匹配时间范围返回 `{"files": [], "count": 0}`
 
 ---
 
 ### 4.3 火焰图生成API (routes_flamegraph.py)
 
-- [ ] 4.3.1 创建蓝图 `flamegraph_bp = Blueprint('flamegraph', __name__, url_prefix='/api/flamegraph')`
-- [ ] 4.3.2 实现 `GET /api/flamegraph?start=...&end=...`
+- [x] 4.3.1 创建蓝图 `flamegraph_bp = Blueprint('flamegraph', __name__, url_prefix='/api/flamegraph')`
+- [x] 4.3.2 实现 `GET /api/flamegraph?start=...&end=...`
   - 调用 `find_profiles` + `generate_flamegraph`
   - 返回 SVG 内容，`Content-Type: image/svg+xml`
-- [ ] 4.3.3 实现 `GET /api/flamegraph/data?start=...&end=...`（d3-flame-graph 用）
+- [x] 4.3.3 实现 `GET /api/flamegraph/data?start=...&end=...`（d3-flame-graph 用）
   - 调用 `find_profiles`，执行 `perf script | stackcollapse-perf.pl`
   - 解析 folded stack 格式为层级 JSON `{name, value, children}`
   - 返回 `Content-Type: application/json`
-- [ ] 4.3.4 参数校验同 4.2
+- [x] 4.3.4 参数校验同 4.2
 
 **测试指标 4.3**:
-- [ ] `curl "http://localhost:5000/api/flamegraph?start=...&end=..."` 返回 SVG + content-type 正确
-- [ ] 浏览器直接访问该URL显示火焰图
-- [ ] `curl "http://localhost:5000/api/flamegraph/data?start=...&end=..."` 返回层级JSON
-- [ ] 无匹配时间返回 404 + 提示信息
+- [x] `curl "http://localhost:5000/api/flamegraph?start=...&end=..."` 返回 SVG + content-type 正确
+- [x] 浏览器直接访问该URL显示火焰图
+- [x] `curl "http://localhost:5000/api/flamegraph/data?start=...&end=..."` 返回层级JSON
+- [x] 无匹配时间返回 404 + 提示信息
 
 ---
 
 ### 4.4 系统状态API (routes_system.py)
 
-- [ ] 4.4.1 创建蓝图 `system_bp = Blueprint('system', __name__, url_prefix='/api/system')`
-- [ ] 4.4.2 实现 `GET /api/system/status` 返回:
+- [x] 4.4.1 创建蓝图 `system_bp = Blueprint('system', __name__, url_prefix='/api/system')`
+- [x] 4.4.2 实现 `GET /api/system/status` 返回:
   ```json
   {
     "cpu_percent": 12.5,
@@ -297,29 +297,29 @@
     "uptime_seconds": 3600
   }
   ```
-- [ ] 4.4.3 用 `psutil` 获取 CPU 和磁盘信息
-- [ ] 4.4.4 collector_status 通过检查 perf 进程是否存活判断
+- [x] 4.4.3 用 `psutil` 获取 CPU 和磁盘信息
+- [x] 4.4.4 collector_status 通过检查 perf 进程是否存活判断
 
 **测试指标 4.4**:
-- [ ] `curl http://localhost:5000/api/system/status` 返回200 + JSON
-- [ ] 所有字段都存在且类型正确
-- [ ] 连续请求3次，cpu_percent 值有变化（说明确实在实时读取）
+- [x] `curl http://localhost:5000/api/system/status` 返回200 + JSON
+- [x] 所有字段都存在且类型正确
+- [x] 连续请求3次，cpu_percent 值有变化（说明确实在实时读取）
 
 ---
 
 ### 4.5 配置 Gunicorn 并更新 entrypoint.sh
 
-- [ ] 4.5.1 修改 entrypoint.sh 前台进程为: `exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 "api.app:create_app()"`
-- [ ] 4.5.2 删除之前的 `sleep infinity` 占位
+- [x] 4.5.1 修改 entrypoint.sh 前台进程为: `exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 "api.app:create_app()"`
+- [x] 4.5.2 删除之前的 `sleep infinity` 占位
 
 **测试指标 4.5**:
-- [ ] 容器启动后 `docker exec cpu-profiler ps aux | grep gunicorn` 显示 gunicorn master + worker 进程
-- [ ] `curl http://localhost:8080/api/system/status` 返回正确JSON（注意现在是8080端口）
+- [x] 容器启动后 `docker exec cpu-profiler ps aux | grep gunicorn` 显示 gunicorn master + worker 进程
+- [x] `curl http://localhost:8080/api/system/status` 返回正确JSON（注意现在是8080端口）
 
 **Step 4 整体通过标准**:
-- [ ] 4个API端点全部curl返回正确结果
-- [ ] 异常输入返回4xx状态码
-- [ ] gunicorn 正常运行
+- [x] 4个API端点全部curl返回正确结果
+- [x] 异常输入返回4xx状态码
+- [x] gunicorn 正常运行
 
 ---
 

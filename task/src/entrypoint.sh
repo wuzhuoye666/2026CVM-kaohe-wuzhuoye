@@ -66,7 +66,5 @@ fi
 
 echo "=== All services started ==="
 
-# --- 前台启动 API 服务器（Step 4 将替换为 gunicorn）---
-# 当前占位：使用 sleep infinity 保持容器运行
-# Step 4 替换为: exec gunicorn --bind 0.0.0.0:${PORT} --workers 2 "api.app:create_app()"
-sleep infinity
+# --- 前台启动 API 服务器 ---
+exec gunicorn --bind 0.0.0.0:${PORT} --workers 2 "api.app:create_app()"

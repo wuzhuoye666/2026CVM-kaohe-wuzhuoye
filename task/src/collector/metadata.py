@@ -40,10 +40,14 @@ class MetadataStore:
             logger.info("Created metadata file: %s", self.filepath)
 
     def _read(self) -> list[dict]:
-        """读取JSON文件内容。"""
+        """读取JSON文件内容（加锁防止读到写一半的脏数据）。"""
         try:
             with open(self.filepath, "r") as f:
-                return json.load(f)
+                fcntl.flock(f, fcntl.LOCK_SH)
+                try:
+                    return json.load(f)
+                finally:
+                    fcntl.flock(f, fcntl.LOCK_UN)
         except (json.JSONDecodeError, FileNotFoundError):
             return []
 
