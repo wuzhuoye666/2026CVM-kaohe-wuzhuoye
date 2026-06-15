@@ -12,7 +12,7 @@
 |------|------|------|
 | 1 | 采集核心 — perf record 持续采集 + 轮转 | [x] 完成 |
 | 2 | Docker 容器化 | [x] 完成 |
-| 3 | 火焰图生成后端 | [ ] |
+| 3 | 火焰图生成后端 | [x] 完成 |
 | 4 | REST API 完整实现 | [ ] |
 | 5 | Web 前端 | [ ] |
 | 6 | 测试验证 | [ ] |
@@ -181,50 +181,50 @@
 
 ### 3.1 验证 FlameGraph 工具链
 
-- [ ] 3.1.1 进入运行中容器: `docker exec -it cpu-profiler bash`
-- [ ] 3.1.2 测试全流水线: `perf script -i /data/perf-xxx.data | /opt/FlameGraph/stackcollapse-perf.pl | /opt/FlameGraph/flamegraph.pl > /tmp/test.svg`
-- [ ] 3.1.3 验证SVG: `head -5 /tmp/test.svg` 包含 `<svg` 标签
+- [x] 3.1.1 进入运行中容器: `docker exec -it cpu-profiler bash`
+- [x] 3.1.2 测试全流水线: `perf script -i /data/perf-xxx.data | /opt/FlameGraph/stackcollapse-perf.pl | /opt/FlameGraph/flamegraph.pl > /tmp/test.svg`
+- [x] 3.1.3 验证SVG: `head -5 /tmp/test.svg` 包含 `<svg` 标签
 
 **测试指标 3.1**:
-- [ ] 流水线命令执行无报错
-- [ ] 生成的SVG文件 > 1KB
-- [ ] 文件开头包含 `<svg`
+- [x] 流水线命令执行无报错
+- [x] 生成的SVG文件 > 1KB
+- [x] 文件开头包含 `<svg`
 
 ---
 
 ### 3.2 编写按时间查找文件函数 (utils.py)
 
-- [ ] 3.2.1 实现 `find_profiles(start_iso, end_iso, data_dir="/data")`: 读取 metadata.json，返回时间重叠的文件完整路径列表
-- [ ] 3.2.2 时间重叠判断逻辑: `profile.start <= query.end AND profile.end >= query.start`
-- [ ] 3.2.3 输入参数为 ISO 格式字符串（如 `2026-06-15T03:00:00`），内部转为 datetime 比较
+- [x] 3.2.1 实现 `find_profiles(start_iso, end_iso, data_dir="/data")`: 读取 metadata.json，返回时间重叠的文件完整路径列表
+- [x] 3.2.2 时间重叠判断逻辑: `profile.start <= query.end AND profile.end >= query.start`
+- [x] 3.2.3 输入参数为 ISO 格式字符串（如 `2026-06-15T03:00:00`），内部转为 datetime 比较
 
 **测试指标 3.2**:
-- [ ] 给定已有采样的时间范围中间段，返回非空列表
-- [ ] 给定完全无关的未来时间，返回空列表
-- [ ] 跨越多个采样文件的宽时间范围，返回所有重叠文件
+- [x] 给定已有采样的时间范围中间段，返回非空列表
+- [x] 给定完全无关的未来时间，返回空列表
+- [x] 跨越多个采样文件的宽时间范围，返回所有重叠文件
 
 ---
 
 ### 3.3 编写 generate_flamegraph 函数 (utils.py)
 
-- [ ] 3.3.1 实现 `generate_flamegraph(file_paths, output_path=None)`:
+- [x] 3.3.1 实现 `generate_flamegraph(file_paths, output_path=None)`:
   - 遍历 file_paths，对每个执行 `perf script -i {path}`
   - 将所有输出合并 piped 给 `stackcollapse-perf.pl | flamegraph.pl`
   - 如果 output_path 指定，写入文件；否则返回 SVG 字符串
-- [ ] 3.3.2 使用 `subprocess.Popen` 管道串联，避免临时中间文件
-- [ ] 3.3.3 火焰图标题显示查询时间范围
-- [ ] 3.3.4 错误处理: perf script 或 perl 脚本失败时抛出明确异常
+- [x] 3.3.2 使用 `subprocess.Popen` 管道串联，避免临时中间文件
+- [x] 3.3.3 火焰图标题显示查询时间范围
+- [x] 3.3.4 错误处理: perf script 或 perl 脚本失败时抛出明确异常
 
 **测试指标 3.3**:
-- [ ] 调用 `generate_flamegraph(["/data/perf-xxx.data"])` 返回包含 `<svg` 的字符串
-- [ ] 调用 `generate_flamegraph(["/data/perf-xxx.data"], "/tmp/out.svg")` 生成文件可浏览器打开
-- [ ] 传入空列表抛出 ValueError
-- [ ] 传入不存在的文件路径抛出明确异常
+- [x] 调用 `generate_flamegraph(["/data/perf-xxx.data"])` 返回包含 `<svg` 的字符串
+- [x] 调用 `generate_flamegraph(["/data/perf-xxx.data"], "/tmp/out.svg")` 生成文件可浏览器打开
+- [x] 传入空列表抛出 ValueError
+- [x] 传入不存在的文件路径抛出明确异常
 
 **Step 3 整体通过标准**:
-- [ ] 给定 ISO 时间范围 → `find_profiles` 返回正确文件列表
-- [ ] 文件列表传入 `generate_flamegraph` → 生成有效SVG
-- [ ] 浏览器打开SVG显示完整火焰图
+- [x] 给定 ISO 时间范围 → `find_profiles` 返回正确文件列表
+- [x] 文件列表传入 `generate_flamegraph` → 生成有效SVG
+- [x] 浏览器打开SVG显示完整火焰图
 
 ---
 
