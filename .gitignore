@@ -1,8 +1,10 @@
 *.pyc
 __pycache__/
 *.data
+perf.data
+perf.data.old
 *.tar
-!task/profiler.tar
+!task2/profiler.tar
 .env
 .venv/
 node_modules/
@@ -11,3 +13,4 @@ dist/
 *.swp
 *.swo
 .pytest_cache/
+cache_line_test

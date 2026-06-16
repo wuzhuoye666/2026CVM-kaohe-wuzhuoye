@@ -1,0 +1,27 @@
+stress-ng: info:  [2283610] setting to a 30 secs run per stressor
+stress-ng: info:  [2283610] dispatching hogs: 1 cpu
+stress-ng: info:  [2283610] skipped: 0
+stress-ng: info:  [2283610] passed: 1: cpu (1)
+stress-ng: info:  [2283610] failed: 0
+stress-ng: info:  [2283610] metrics untrustworthy: 0
+stress-ng: info:  [2283610] successful run completed in 30.00 secs
+
+ Performance counter stats for 'stress-ng --cpu 1 --cpu-method matrixprod -t 30s':
+
+    93,103,195,894      cycles                                                                  (55.55%)
+    91,759,543,609      instructions                     #    0.99  insn per cycle              (55.54%)
+    22,508,807,534      cache-references                                                        (55.57%)
+         5,766,074      cache-misses                     #    0.03% of all cache refs           (55.57%)
+    11,455,794,386      L1-dcache-load-misses                                                   (55.55%)
+         9,661,916      L1-icache-load-misses                                                   (55.57%)
+   <not supported>      LLC-load-misses
+    11,170,710,523      branch-instructions                                                     (55.56%)
+        92,752,144      branch-misses                    #    0.83% of all branches             (55.54%)
+            91,458      dTLB-load-misses                                                        (55.55%)
+                53      context-switches
+                 0      cpu-migrations
+
+      30.034199189 seconds time elapsed
+
+      30.002862000 seconds user
+       0.027743000 seconds sys

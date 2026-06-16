@@ -1,0 +1,27 @@
+stress-ng: info:  [2283195] setting to a 30 secs run per stressor
+stress-ng: info:  [2283195] dispatching hogs: 1 cpu
+stress-ng: info:  [2283195] skipped: 0
+stress-ng: info:  [2283195] passed: 1: cpu (1)
+stress-ng: info:  [2283195] failed: 0
+stress-ng: info:  [2283195] metrics untrustworthy: 0
+stress-ng: info:  [2283195] successful run completed in 30.00 secs
+
+ Performance counter stats for 'stress-ng --cpu 1 --cpu-method int64 -t 30s':
+
+    93,665,965,362      cycles                                                                  (55.95%)
+   302,078,844,028      instructions                     #    3.23  insn per cycle              (56.00%)
+        51,397,767      cache-references                                                        (56.02%)
+         1,855,415      cache-misses                     #    3.61% of all cache refs           (55.96%)
+        10,831,054      L1-dcache-load-misses                                                   (56.02%)
+        10,993,785      L1-icache-load-misses                                                   (56.05%)
+   <not supported>      LLC-load-misses
+     3,659,290,723      branch-instructions                                                     (55.97%)
+         7,916,990      branch-misses                    #    0.22% of all branches             (56.03%)
+            58,911      dTLB-load-misses                                                        (56.03%)
+                61      context-switches
+                 1      cpu-migrations
+
+      30.028923601 seconds time elapsed
+
+      30.000053000 seconds user
+       0.024677000 seconds sys

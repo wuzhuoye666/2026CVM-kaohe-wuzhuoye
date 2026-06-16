@@ -1,0 +1,15 @@
+=== Cache Line Stride Benchmark ===
+Array size: 64 MB, accesses per iteration: 67108864
+Warming up...
+
+Stride(B)  Latency(ns/acc)    Throughput(MB/s)  
+---------- ------------------ ------------------
+1          1.90               525.60            
+2          1.91               1049.62           
+4          1.91               2096.47           
+8          1.91               4184.01           
+16         1.92               8328.78           
+32         1.94               16496.52          
+64         2.16               29562.46          
+128        6.39               20027.08          
+256        7.19               35622.32          

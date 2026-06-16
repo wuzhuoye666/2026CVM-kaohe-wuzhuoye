@@ -1,0 +1,22 @@
+=== stride = 8 ===
+[single-stride mode] stride = 8 bytes
+Array size: 64 MB, accesses per iteration: 67108864
+  iter 1: 2.11 ns/access
+  iter 2: 2.11 ns/access
+  iter 3: 2.11 ns/access
+  iter 4: 2.10 ns/access
+  iter 5: 2.11 ns/access
+=> avg 2.11 ns/access
+
+ Performance counter stats for './cache_line_test 8':
+
+     3,397,920,633      cycles
+     7,617,186,916      instructions                     #    2.24  insn per cycle
+       120,259,604      cache-references
+           841,702      cache-misses                     #    0.70% of all cache refs
+        59,436,469      L1-dcache-load-misses
+   <not supported>      LLC-load-misses
+
+       1.012925344 seconds time elapsed
+       0.994649000 seconds user
+       0.017993000 seconds sys

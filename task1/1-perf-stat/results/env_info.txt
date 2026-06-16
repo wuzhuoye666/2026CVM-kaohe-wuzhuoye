@@ -1,0 +1,43 @@
+=== CPU Info ===
+Architecture:                x86_64
+CPU op-mode(s):              32-bit, 64-bit
+Address sizes:               52 bits physical, 48 bits virtual
+CPU(s):                      32
+Vendor ID:                   AuthenticAMD
+Model name:                  AMD EPYC 9K65 192-Core Processor
+CPU family:                  26
+Model:                       0
+Thread(s) per core:          2
+Core(s) per socket:          16
+Socket(s):                   1
+Stepping:                    0
+BogoMIPS:                    4500.42
+Microarchitecture代号:       Zen 4 (Genoa/EPYC 9K65)
+
+Flags: avx avx2 avx512f avx512dq avx512cd avx512bw avx512vl avx512ifma avx512_bf16 avx512vbmi avx512_vbmi2 avx512_vnni avx512_bitalg avx512_vpopcntdq
+
+Caches (sum of all):
+  L1d:  768 KiB (16 instances)   — 48 KiB per core
+  L1i:  512 KiB (16 instances)   — 32 KiB per core
+  L2:   16 MiB (16 instances)    — 1 MiB per core
+  L3:   32 MiB (1 instance)      — shared
+
+=== Kernel ===
+6.8.0-117-generic
+
+=== Virtualization ===
+kvm (KVM虚拟机)
+
+=== NUMA Topology ===
+available: 1 nodes (0)
+node 0 cpus: 0-31
+node 0 size: 62903 MB
+node 0 free: 35696 MB
+node distances:
+node   0
+  0:  10
+
+=== CPU Frequency ===
+no or unknown cpufreq driver is active
+boost state support: Supported: no, Active: no
+(KVM虚拟机中无法控制CPU频率，宿主决定频率策略)
