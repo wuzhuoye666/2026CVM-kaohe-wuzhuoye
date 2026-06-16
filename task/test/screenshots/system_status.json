@@ -1,9 +1,0 @@
-{
-    "collector_status": "running",
-    "cpu_percent": 2.5,
-    "data_dir_files": 103,
-    "data_dir_size_mb": 256.9,
-    "disk_usage_percent": 3.9,
-    "retention_hours": 24,
-    "uptime_seconds": 967
-}
