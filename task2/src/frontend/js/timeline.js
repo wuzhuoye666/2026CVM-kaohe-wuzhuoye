@@ -62,10 +62,12 @@ const Timeline = {
       // We need start/end for each file — parse from filename or use metadata
       this.profiles = (data.files || []).map(f => {
         // Parse filename: perf-YYYYMMDD_HHMMSS.data
-        const match = f.match(/perf-(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})\.data$/);
+        const basename = f.split('/').pop(); // handle full paths like /data/perf-xxx.data
+        const match = basename.match(/perf-(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})\.data$/);
         if (match) {
           const [, y, mo, d, h, mi, s] = match;
-          const start = new Date(+y, +mo - 1, +d, +h, +mi, +s);
+          // Filename timestamp is UTC, use Date.UTC to avoid timezone offset
+          const start = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, +s));
           const end = new Date(start.getTime() + 60 * 1000); // assume 1min slice
           return { start, end, file: f };
         }

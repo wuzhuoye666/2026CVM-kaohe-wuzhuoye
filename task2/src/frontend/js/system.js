@@ -13,6 +13,12 @@ const SystemMonitor = {
       this._render(d);
     } catch (e) {
       console.warn('SystemMonitor.fetch failed:', e);
+      // Ensure badge shows "离线" on network failure
+      const badge = document.getElementById('collector-status');
+      if (badge && !badge.classList.contains('stopped')) {
+        badge.className = 'status-badge stopped';
+        badge.innerHTML = '&#9679; 离线';
+      }
     }
   },
 
