@@ -17,11 +17,11 @@ FLAMEGRAPH_PL = "/opt/FlameGraph/flamegraph.pl"
 STACKCOLLAPSE_PL = "/opt/FlameGraph/stackcollapse-perf.pl"
 
 
-def find_profiles(start_iso: str, end_iso: str, data_dir: str = "/data") -> list[str]:
-    """根据时间范围查找匹配的采样文件完整路径。
+def find_profiles(start_iso: str, end_iso: str, data_dir: str = "/data") -> list[dict]:
+    """根据时间范围查找匹配的采样元数据条目。
 
     读取metadata.json，返回与[start_iso, end_iso]时间范围有重叠的
-    采样文件的完整路径列表。
+    采样元数据条目列表。
 
     时间重叠判断: profile.start <= query.end AND profile.end >= query.start
 
@@ -31,18 +31,21 @@ def find_profiles(start_iso: str, end_iso: str, data_dir: str = "/data") -> list
         data_dir: 采样数据目录，默认 "/data"
 
     Returns:
-        匹配的采样文件完整路径列表
+        匹配的采样元数据条目列表(每个条目包含 file, start, end, size_mb, cpu_percent)
     """
     metadata_path = Path(data_dir) / "metadata.json"
     store = MetadataStore(str(metadata_path))
     entries = store.query(start_iso, end_iso)
 
-    # 将文件名转为完整路径
-    full_paths = [str(Path(data_dir) / e["file"]) for e in entries]
     logger.info(
-        "find_profiles(%s ~ %s): found %d files", start_iso, end_iso, len(full_paths)
+        "find_profiles(%s ~ %s): found %d entries", start_iso, end_iso, len(entries)
     )
-    return full_paths
+    return entries
+
+
+def profile_paths(entries: list[dict], data_dir: str = "/data") -> list[str]:
+    """将元数据条目列表转换为完整文件路径列表。"""
+    return [str(Path(data_dir) / e["file"]) for e in entries]
 
 
 def generate_flamegraph(

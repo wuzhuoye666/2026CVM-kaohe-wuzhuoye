@@ -11,7 +11,7 @@ from pathlib import Path
 
 from flask import Blueprint, request, jsonify, Response, current_app
 
-from api.utils import find_profiles, generate_flamegraph, STACKCOLLAPSE_PL
+from api.utils import find_profiles, profile_paths, generate_flamegraph, STACKCOLLAPSE_PL
 
 logger = logging.getLogger("api.flamegraph")
 
@@ -62,7 +62,8 @@ def get_flamegraph_svg():
         return err
 
     data_dir = current_app.config["DATA_DIR"]
-    files = find_profiles(start, end, data_dir=data_dir)
+    entries = find_profiles(start, end, data_dir=data_dir)
+    files = profile_paths(entries, data_dir)
 
     if not files:
         return jsonify({"error": f"No profile data found for {start} ~ {end}"}), 404
@@ -144,7 +145,8 @@ def get_flamegraph_data():
         return err
 
     data_dir = current_app.config["DATA_DIR"]
-    files = find_profiles(start, end, data_dir=data_dir)
+    entries = find_profiles(start, end, data_dir=data_dir)
+    files = profile_paths(entries, data_dir)
 
     if not files:
         return jsonify({"error": f"No profile data found for {start} ~ {end}"}), 404

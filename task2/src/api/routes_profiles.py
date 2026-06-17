@@ -41,11 +41,11 @@ def get_profiles():
         return jsonify({"error": f"Invalid 'end' format: {end}. Expected ISO format like 2026-06-15T00:00:00"}), 400
 
     data_dir = current_app.config["DATA_DIR"]
-    files = find_profiles(start, end, data_dir=data_dir)
+    entries = find_profiles(start, end, data_dir=data_dir)
 
     return jsonify({
-        "files": files,
-        "count": len(files),
+        "entries": entries,
+        "count": len(entries),
         "start": start,
         "end": end,
     })

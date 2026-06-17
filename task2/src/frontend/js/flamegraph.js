@@ -61,7 +61,7 @@ const FlameGraphView = {
   async _loadSVG(startISO, endISO) {
     this._showStatus('loading');
     try {
-      const res = await fetch(`/api/flamegraph?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
+      const res = await API.fetch(`/api/flamegraph?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
       if (res.status === 404) {
         this._showStatus('error', '该时间段无采样数据');
         return;
@@ -80,7 +80,7 @@ const FlameGraphView = {
   async _loadD3(startISO, endISO) {
     this._showStatus('loading');
     try {
-      const res = await fetch(`/api/flamegraph/data?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
+      const res = await API.fetch(`/api/flamegraph/data?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
       if (res.status === 404) {
         this._showStatus('error', '该时间段无采样数据');
         return;

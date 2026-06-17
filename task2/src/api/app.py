@@ -30,6 +30,18 @@ def create_app() -> Flask:
     app.config["DATA_DIR"] = os.environ.get("DATA_DIR", "/data")
     app.config["RETENTION_HOURS"] = int(os.environ.get("RETENTION_HOURS", "24"))
 
+    # 全局 CORS 支持，允许前端跨域/本地文件访问
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        return response
+
+    @app.route("/api/<path:path>", methods=["OPTIONS"])
+    def api_options(path):
+        return "", 204
+
     # 注册蓝图
     from api.routes_profiles import profiles_bp
     from api.routes_flamegraph import flamegraph_bp

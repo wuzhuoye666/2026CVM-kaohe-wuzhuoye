@@ -14,6 +14,22 @@
       FlameGraphView.load(startISO, endISO);
     });
 
+    // 2.5 绑定跳转按钮
+    const jumpBtn = document.getElementById('jump-btn');
+    const jumpInput = document.getElementById('jump-input');
+    const rangeInput = document.getElementById('range-input');
+    if (jumpBtn && jumpInput) {
+      jumpBtn.addEventListener('click', () => {
+        const duration = rangeInput ? parseInt(rangeInput.value, 10) : 1;
+        if (!Timeline.jumpToTime(jumpInput.value, duration)) {
+          alert('请输入正确的时间格式，如 2026-06-11 03:00 或 03:00');
+        }
+      });
+      jumpInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') jumpBtn.click();
+      });
+    }
+
     // 3. 启动系统监控
     SystemMonitor.start(5000);
 

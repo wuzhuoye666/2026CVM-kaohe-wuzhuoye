@@ -15,6 +15,8 @@ from pathlib import Path
 
 from collector.metadata import MetadataStore, TIME_FORMAT
 
+import psutil
+
 logger = logging.getLogger("perf_collector")
 
 
@@ -36,6 +38,8 @@ class PerfCollector:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         meta_path = metadata_path or str(self.output_dir / "metadata.json")
         self.metadata = MetadataStore(meta_path)
+        # 初始化 psutil CPU 计数器，丢弃第一次无意义的返回值
+        psutil.cpu_percent(interval=None)
 
     def _perf_path(self) -> str:
         """找到系统中可用的perf二进制路径。"""
@@ -76,22 +80,25 @@ class PerfCollector:
         start_time = datetime.now(timezone.utc)
 
         try:
+            psutil.cpu_percent(interval=None)  # 重置计数器，开始新一轮统计
             result = subprocess.run(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
             end_time = datetime.now(timezone.utc)
+            cpu_percent = psutil.cpu_percent(interval=None)  # 获取该切片期间的平均 CPU
 
             if result.returncode not in (0, 128):
                 # perf record 在被SIGINT中断时返回128，这是正常的
                 stderr = result.stderr.decode(errors="replace")
                 logger.error("perf record failed (rc=%d): %s", result.returncode, stderr)
             else:
-                logger.info("Perf slice completed: %s (%.1f MB)",
+                logger.info("Perf slice completed: %s (%.1f MB, cpu=%.1f%%)",
                             output_file.name,
                             output_file.stat().st_size / 1024 / 1024
-                            if output_file.exists() else 0)
+                            if output_file.exists() else 0,
+                            cpu_percent)
         except FileNotFoundError:
             logger.error("perf binary not found: %s", perf_bin)
             raise
@@ -107,6 +114,7 @@ class PerfCollector:
                 start_time=start_time.strftime(TIME_FORMAT),
                 end_time=end_time.strftime(TIME_FORMAT),
                 size_mb=size_mb,
+                cpu_percent=cpu_percent,
             )
 
         return output_file

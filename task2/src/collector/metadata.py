@@ -72,7 +72,7 @@ class MetadataStore:
                 fcntl.flock(f, fcntl.LOCK_UN)
         return result
 
-    def add_entry(self, file_path: str, start_time: str, end_time: str, size_mb: float):
+    def add_entry(self, file_path: str, start_time: str, end_time: str, size_mb: float, cpu_percent: float = 0.0):
         """追加一条采样记录。
 
         Args:
@@ -80,12 +80,14 @@ class MetadataStore:
             start_time: ISO格式开始时间
             end_time: ISO格式结束时间
             size_mb: 文件大小(MB)
+            cpu_percent: 该时间片的CPU使用率(%)
         """
         entry = {
             "file": file_path,
             "start": start_time,
             "end": end_time,
             "size_mb": round(size_mb, 2),
+            "cpu_percent": round(cpu_percent, 1),
         }
 
         def _add(data: list[dict]):
@@ -93,7 +95,7 @@ class MetadataStore:
             return entry
 
         self._modify(_add)
-        logger.info("Metadata entry added: %s (%s ~ %s)", file_path, start_time, end_time)
+        logger.info("Metadata entry added: %s (%s ~ %s) cpu=%s%%", file_path, start_time, end_time, entry["cpu_percent"])
 
     def query(self, start_time: str, end_time: str) -> list[dict]:
         """查询与指定时间范围有重叠的采样条目。
