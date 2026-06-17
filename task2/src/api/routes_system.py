@@ -17,12 +17,15 @@ _start_time = time.time()
 
 
 def _check_collector_alive() -> str:
-    """检查perf采集进程是否存活。"""
+    """检查perf采集器进程是否存活。
+
+    检测 python3 -m collector.perf_collector 进程，而非 perf record 子进程，
+    因为 perf record 在分片间隙会短暂退出，导致误判为离线。
+    """
     for proc in psutil.process_iter(["name", "cmdline"]):
         try:
-            name = proc.info["name"] or ""
             cmdline = " ".join(proc.info.get("cmdline") or [])
-            if "perf" in name and "record" in cmdline:
+            if "collector.perf_collector" in cmdline:
                 return "running"
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
