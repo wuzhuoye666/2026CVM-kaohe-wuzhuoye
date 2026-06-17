@@ -24,7 +24,7 @@ echo "  DATA_DIR        = ${DATA_DIR}"
 # --- 创建数据目录 ---
 mkdir -p "${DATA_DIR}"
 
-# --- 检查 perf 二进制可用性 ---
+# --- 检查并安装匹配宿主机内核的 perf ---
 perf_bin=$(command -v perf 2>/dev/null || true)
 if [ -z "${perf_bin}" ]; then
     # 尝试查找带版本号的 perf 并创建软链接
@@ -33,11 +33,57 @@ if [ -z "${perf_bin}" ]; then
         ln -sf "${latest_perf}" /usr/local/bin/perf
         perf_bin="/usr/local/bin/perf"
         echo "  Linked ${latest_perf} -> /usr/local/bin/perf"
-    else
-        echo "FATAL: perf binary not found! Ensure linux-tools-common is installed,"
-        echo "       or rebuild image on a host matching the target kernel version."
-        exit 1
     fi
+fi
+
+# 动态安装匹配宿主机内核的 perf（解决跨内核版本兼容性）
+# --pid=host 使得 uname -r 返回宿主机内核版本
+host_kernel=$(uname -r)
+echo "  Host kernel: ${host_kernel}"
+
+# 检查是否已存在精确匹配的 perf
+exact_perf="/usr/lib/linux-tools/${host_kernel}/perf"
+if [ -x "${exact_perf}" ]; then
+    ln -sf "${exact_perf}" /usr/local/bin/perf
+    perf_bin="/usr/local/bin/perf"
+    echo "  Using existing exact-match perf: ${exact_perf}"
+elif [ -n "${perf_bin}" ]; then
+    existing_perf_ver=$(${perf_bin} --version 2>&1 | grep -oP 'perf version \K[0-9.]+' || echo "0")
+    echo "  Image perf version: ${existing_perf_ver}"
+    if ! echo "${host_kernel}" | grep -q "${existing_perf_ver}"; then
+        # 内核与perf版本不匹配，尝试动态安装
+        echo "  Kernel/perf version mismatch, attempting to install linux-tools-${host_kernel}..."
+        if apt-get update -qq 2>/dev/null && apt-get install -y --no-install-recommends "linux-tools-${host_kernel}" 2>/dev/null; then
+            new_perf="/usr/lib/linux-tools/${host_kernel}/perf"
+            if [ -x "${new_perf}" ]; then
+                ln -sf "${new_perf}" /usr/local/bin/perf
+                perf_bin="/usr/local/bin/perf"
+                echo "  Installed and linked: ${new_perf} -> /usr/local/bin/perf"
+            fi
+            rm -rf /var/lib/apt/lists/*
+        else
+            echo "  WARNING: Could not install linux-tools-${host_kernel}"
+            echo "  Falling back to bundled perf (may not work correctly)"
+        fi
+    fi
+else
+    # 没有 perf 可用，尝试强制安装
+    echo "  No perf found, attempting to install linux-tools-${host_kernel}..."
+    if apt-get update -qq 2>/dev/null && apt-get install -y --no-install-recommends "linux-tools-${host_kernel}" 2>/dev/null; then
+        new_perf="/usr/lib/linux-tools/${host_kernel}/perf"
+        if [ -x "${new_perf}" ]; then
+            ln -sf "${new_perf}" /usr/local/bin/perf
+            perf_bin="/usr/local/bin/perf"
+            echo "  Installed and linked: ${new_perf} -> /usr/local/bin/perf"
+        fi
+        rm -rf /var/lib/apt/lists/*
+    fi
+fi
+
+if [ -z "${perf_bin}" ]; then
+    echo "FATAL: perf binary not found! Ensure linux-tools-common is installed,"
+    echo "       or rebuild image on a host matching the target kernel version."
+    exit 1
 fi
 echo "  perf path = ${perf_bin} ($(${perf_bin} --version 2>&1 | head -1))"
 

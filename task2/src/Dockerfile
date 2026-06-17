@@ -6,17 +6,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN mkdir -p /etc/pip && echo "[global]\nindex-url = https://mirrors.aliyun.com/pypi/simple/\ntrusted-host = mirrors.aliyun.com" > /etc/pip/pip.conf
 ENV PIP_CONFIG_FILE=/etc/pip/pip.conf
 
-# 安装系统依赖（合并为一层减少镜像大小）
+# 安装系统依赖 + 构建机器对应内核的 perf 作为 fallback
+# entrypoint 会在容器启动时动态安装匹配宿主机内核的 perf
 RUN apt-get update && apt-get install -y --no-install-recommends \
     linux-tools-common \
     python3 \
     python3-pip \
     perl \
     stress-ng \
-    && rm -rf /var/lib/apt/lists/*
-
-# 处理 perf 路径：ubuntu 安装的是带版本号的 perf_5.15 等，需要软链接
-RUN apt-get update && apt-get install -y --no-install-recommends "linux-tools-$(uname -r)" 2>/dev/null || true \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get update && apt-get install -y --no-install-recommends "linux-tools-$(uname -r)" 2>/dev/null || true \
     && rm -rf /var/lib/apt/lists/* \
     && perf_bin=$(ls /usr/bin/perf_* 2>/dev/null | sort -V | tail -1) \
     && if [ -n "$perf_bin" ]; then ln -sf "$perf_bin" /usr/bin/perf; fi
