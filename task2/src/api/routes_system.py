@@ -6,6 +6,7 @@
 
 import os
 import time
+from pathlib import Path
 
 import psutil
 from flask import Blueprint, jsonify
@@ -17,19 +18,38 @@ _start_time = time.time()
 
 
 def _check_collector_alive() -> str:
-    """检查perf采集器进程是否存活。
+    """检查perf采集器进程是否存活且实质可用。
 
     检测 python3 -m collector.perf_collector 进程，而非 perf record 子进程，
     因为 perf record 在分片间隙会短暂退出，导致误判为离线。
+    同时检查 .collector_health 文件判断采集器是否因连续失败而降级。
     """
+    found = False
     for proc in psutil.process_iter(["name", "cmdline"]):
         try:
             cmdline = " ".join(proc.info.get("cmdline") or [])
             if "collector.perf_collector" in cmdline:
-                return "running"
+                found = True
+                break
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
-    return "stopped"
+
+    if not found:
+        return "stopped"
+
+    # 检查健康状态文件
+    data_dir = os.environ.get("DATA_DIR", "/data")
+    health_path = Path(data_dir) / ".collector_health"
+    try:
+        if health_path.exists():
+            import json
+            health = json.loads(health_path.read_text(encoding="utf-8"))
+            if health.get("status") == "degraded":
+                return "degraded"
+    except (OSError, json.JSONDecodeError):
+        pass
+
+    return "running"
 
 
 @system_bp.route("/status", methods=["GET"])

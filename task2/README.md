@@ -28,7 +28,7 @@
 │  │        时间线选择 → SVG嵌入/d3交互渲染双路径          │ │
 │  │                                                    │ │
 │  └────────────────────────────────────────────────────┘ │
-│                      ↕ --pid=host --privileged           │
+│                         ↕ --privileged                   │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -42,12 +42,8 @@
 # 1. 加载 Docker 镜像
 docker load -i profiler.tar
 
-# 2. 一键启动（--privileged 必须，perf需要访问PMU硬件计数器）
-docker run --privileged --pid=host -d \
-  -p 8080:8080 \
-  -v /tmp/profiler-data:/data \
-  --name cpu-profiler \
-  cpu-profiler:latest
+# 2. 一键启动（--privileged 必须，perf 需要访问 PMU 硬件计数器）
+docker run --privileged -d -p 8080:8080 --name cpu-profiler cpu-profiler:latest
 
 # 3. 打开浏览器访问
 # http://localhost:8080
@@ -60,11 +56,7 @@ docker run --privileged --pid=host -d \
 docker build -t cpu-profiler:latest ./src/
 
 # 2. 启动容器
-docker run --privileged --pid=host -d \
-  -p 8080:8080 \
-  -v /tmp/profiler-data:/data \
-  --name cpu-profiler \
-  cpu-profiler:latest
+docker run --privileged -d -p 8080:8080 --name cpu-profiler cpu-profiler:latest
 ```
 
 ### 验证运行
@@ -73,14 +65,15 @@ docker run --privileged --pid=host -d \
 # 查看容器状态
 docker ps
 
-# 查看系统状态API
+# 查看系统状态API（首次启动需约1分钟安装 linux-tools）
+docker logs cpu-profiler 2>&1 | tail -5
+
+# 查看系统状态
 curl http://localhost:8080/api/system/status
 
-# 等待1-2分钟后，查看已有采样文件
-ls /tmp/profiler-data/perf-*.data
-
-# 查看元数据索引
-cat /tmp/profiler-data/metadata.json
+# 等待1-2分钟后，验证采样数据
+docker exec cpu-profiler ls /data/perf-*.data
+docker exec cpu-profiler cat /data/metadata.json
 ```
 
 ## 使用示例

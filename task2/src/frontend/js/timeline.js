@@ -16,7 +16,7 @@ const Timeline = {
   sliceDuration: 60 * 1000,           // 60000 ms (1min)
 
   // 视图起点(在 0~23h 内循环)
-  viewOffset: 0,  // 相对于 00:00 的毫秒偏移
+  viewOffset: 0,  // 相对于 00:00 的毫秒偏移（本地时间）
   selectedSlice: 0, // 当前选中的起始时间片索引(0~1439, 每片1min)
   selectedDuration: 1, // 选中的合并时长(分钟)
 
@@ -45,9 +45,11 @@ const Timeline = {
   },
 
   _setDefaultView() {
-    // 默认固定从 00:00 开始，不随当前时间变化；只由用户手动拖动
-    this.selectedSlice = 0;  // 选中 00:00
-    this.viewOffset = 0;       // 视图从 00:00 开始
+    // 默认跳转到当前本地时间附近
+    const now = new Date();
+    const ms = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
+    this.selectedSlice = Math.floor(ms / this.sliceDuration);
+    this.viewOffset = this._normOffset(ms - this.viewDuration / 2);
   },
 
   _resize() {
@@ -63,32 +65,32 @@ const Timeline = {
 
   async loadProfiles() {
     try {
+      // 用本地时间构造查询范围（后端存储是 UTC 的 ISO 字符串）
       const now = new Date();
-      const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()));
-      const start = new Date(end.getTime() - 24 * 3600 * 1000);
-      const startISO = start.toISOString().slice(0, 19);
-      const endISO = end.toISOString().slice(0, 19);
+      const endISO = now.toISOString().slice(0, 19);
+      const startISO = new Date(now.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 19);
       const data = await API.getJSON(`/api/profiles?start=${startISO}&end=${endISO}`);
       this.profiles = (data.entries || []).map(entry => {
         const f = entry.file || '';
         const cpu = entry.cpu_percent || 0;
+        // 解析文件名中的 UTC 时间
         const basename = f.split('/').pop();
         const match = basename.match(/perf-(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})\.data$/);
         if (match) {
           const [, y, mo, d, h, mi, s] = match;
-          const start = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, +s));
-          const end = new Date(start.getTime() + this.sliceDuration);
-          return { start, end, file: f, cpuPercent: cpu };
+          // 文件名存的是 UTC，转为本地 Date 用于时间轴显示
+          const utcStart = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, +s));
+          const utcEnd = new Date(utcStart.getTime() + this.sliceDuration);
+          return { start: utcStart, end: utcEnd, file: f, cpuPercent: cpu };
         }
         return null;
       }).filter(Boolean);
-      // 有数据时自动跳转到最新数据所在区域，并选中该时间片
+      // 有数据时自动跳转到最新数据所在区域
       if (this.profiles.length > 0) {
         const latest = this.profiles[this.profiles.length - 1];
-        const ms = latest.start.getUTCHours() * 3600000 + latest.start.getUTCMinutes() * 60000 + latest.start.getUTCSeconds() * 1000;
+        const ms = latest.start.getHours() * 3600000 + latest.start.getMinutes() * 60000 + latest.start.getSeconds() * 1000;
         this.selectedSlice = Math.floor(ms / this.sliceDuration);
         this.viewOffset = this._normOffset(ms - this.viewDuration / 2 + this.sliceDuration / 2);
-        this.referenceDate = new Date(latest.start);
       }
       this.draw();
       this._triggerSelect();
@@ -102,8 +104,8 @@ const Timeline = {
     return ((ms % this.totalDuration) + this.totalDuration) % this.totalDuration;
   },
   _offsetToDate(offset) {
-    // 返回基于 UTC 的"虚拟"Date，仅用于坐标转换(小时/分钟/秒)
-    const base = new Date(Date.UTC(1970, 0, 1));
+    // 把一天内的毫秒偏移转为本地时间的"虚拟"Date（用于取小时/分钟显示）
+    const base = new Date(2000, 0, 1); // 任意日期，只取时/分
     return new Date(base.getTime() + this._normOffset(offset));
   },
   _sliceToOffset(sliceIdx) {
@@ -132,7 +134,6 @@ const Timeline = {
     this._dragging = true;
     this._dragStartX = this._getMouseX(e);
     this._dragStartOffset = this.viewOffset;
-    // 点击直接选中该位置的时间片
     this._selectAtX(this._dragStartX);
   },
 
@@ -154,49 +155,48 @@ const Timeline = {
     const offset = this._xToOffset(x);
     this.selectedSlice = Math.floor(this._normOffset(offset) / this.sliceDuration);
     this._autoScrollToSelection();
-    // 以最近一条数据的日期作为基准，避免时区偏移导致查询不到
-    if (this.profiles.length > 0) {
-      this.referenceDate = new Date(this.profiles[this.profiles.length - 1].start);
-    }
     this.draw();
     this._triggerSelect();
   },
 
-  // 自动滚动视图让选中片始终可见，且尽量靠近中心
+  // 自动滚动视图让选中片始终可见
   _autoScrollToSelection() {
     const selOffset = this._sliceToOffset(this.selectedSlice);
     const rel = this._normOffset(selOffset - this.viewOffset);
-    const w = this._drawWidth;
-    const sliceW = (this.sliceDuration / this.viewDuration) * w * this.selectedDuration;
-
-    // 如果选中片在边缘 20% 范围内，滚动视图让它居中
     if (rel < this.viewDuration * 0.15 || rel > this.viewDuration * 0.85) {
       this.viewOffset = this._normOffset(selOffset - this.viewDuration / 2 + this.sliceDuration / 2);
     }
   },
 
-  // 触发回调 — 使用 UTC 构造 ISO，避免本地时区偏差导致查不到数据
+  // 触发回调 — 生成正确的 UTC ISO 时间戳给后端
   _triggerSelect() {
-    const base = this.referenceDate || new Date();
-    const y = base.getUTCFullYear();
-    const m = base.getUTCMonth();
-    const d = base.getUTCDate();
+    // 用本地时间 selectedSlice 算出选中时段的本地日期时间，
+    // 再转 UTC ISO 发给后端查询
+    const now = new Date();
+    const todayY = now.getFullYear();
+    const todayM = now.getMonth();
+    const todayD = now.getDate();
 
     const startH = Math.floor(this.selectedSlice / 60);
     const startM = this.selectedSlice % 60;
-    const startDate = new Date(Date.UTC(y, m, d, startH, startM, 0));
-    const startISO = startDate.toISOString().slice(0, 19);
 
-    const endTotalMinutes = this.selectedSlice + this.selectedDuration;
-    const endH = Math.floor(endTotalMinutes / 60) % 24;
-    const endM = endTotalMinutes % 60;
-    const endDate = new Date(Date.UTC(y, m, d, endH, endM, 0));
-    const endISO = endDate.toISOString().slice(0, 19);
+    // 构造本地时间 Date 对象
+    const localStart = new Date(todayY, todayM, todayD, startH, startM, 0);
+    const localEnd = new Date(localStart.getTime() + this.selectedDuration * 60 * 1000);
+
+    // 转为 UTC ISO（后端存储的就是 UTC ISO 字符串）
+    const startISO = localStart.toISOString().slice(0, 19);
+    const endISO = localEnd.toISOString().slice(0, 19);
 
     const info = document.getElementById('selection-info');
     if (info) {
-      const fmt = dt => dt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
-      info.textContent = `${fmt(startDate)} ~ ${fmt(endDate)} (${this.selectedDuration}分钟)`;
+      const fmt = dt => {
+        const hh = String(dt.getHours()).padStart(2, '0');
+        const mm = String(dt.getMinutes()).padStart(2, '0');
+        const ss = String(dt.getSeconds()).padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
+      };
+      info.textContent = `${fmt(localStart)} ~ ${fmt(localEnd)} (${this.selectedDuration}分钟)`;
     }
 
     if (this.onSelect) {
@@ -204,9 +204,29 @@ const Timeline = {
     }
   },
 
-  // 根据时间字符串跳转到对应时间片 (HH:MM 或 HH:MM:SS)
+  // 根据时间字符串跳转到对应时间片
   jumpToTime(timeStr, durationMinutes) {
-    const parts = timeStr.trim().split(':');
+    const trimmed = timeStr.trim();
+
+    // 完整日期格式: YYYY-MM-DD HH:MM 或 YYYY-MM-DD HH:MM:SS
+    const fullMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (fullMatch) {
+      const [, y, mo, d, h, m, s] = fullMatch;
+      const date = new Date(+y, +mo - 1, +d, +h, +m, +(s || 0));
+      if (isNaN(date.getTime())) return false;
+      const ms = date.getHours() * 3600000 + date.getMinutes() * 60000 + date.getSeconds() * 1000;
+      this.selectedSlice = Math.floor(ms / this.sliceDuration);
+      if (durationMinutes && durationMinutes > 0) {
+        this.selectedDuration = Math.min(Math.max(parseInt(durationMinutes, 10), 1), 60);
+      }
+      this.viewOffset = this._normOffset(ms - this.viewDuration / 2 + this.sliceDuration / 2);
+      this.draw();
+      this._triggerSelect();
+      return true;
+    }
+
+    // HH:MM 或 HH:MM:SS 格式
+    const parts = trimmed.split(':');
     if (parts.length < 2) return false;
 
     const h = parseInt(parts[0], 10);
@@ -222,16 +242,12 @@ const Timeline = {
       this.selectedDuration = Math.min(Math.max(parseInt(durationMinutes, 10), 1), 60);
     }
     this.viewOffset = this._normOffset(ms - this.viewDuration / 2 + this.sliceDuration / 2);
-    // 以最近一条数据的日期作为基准，避免时区偏移导致查询不到
-    if (this.profiles.length > 0) {
-      this.referenceDate = new Date(this.profiles[this.profiles.length - 1].start);
-    }
     this.draw();
     this._triggerSelect();
     return true;
   },
 
-  // 根据 CPU 使用率返回颜色：0% 绿色 -> 50% 黄色 -> 100% 红色
+  // 根据 CPU 使用率返回颜色
   _cpuColor(pct) {
     if (pct <= 0) return '#0ead69';
     if (pct >= 100) return '#e74c3c';
@@ -261,11 +277,11 @@ const Timeline = {
     ctx.fillStyle = '#0d1b2a';
     ctx.fillRect(0, 0, w, h);
 
-    // 绘制采集色块(循环绘制，多画一圈避免边界断裂)
+    // 绘制采集色块（用本地时间坐标）
     for (const p of this.profiles) {
-      const pStartOfDay = p.start.getUTCHours() * 3600000 + p.start.getUTCMinutes() * 60000 + p.start.getUTCSeconds() * 1000 + p.start.getUTCMilliseconds();
+      // profile.start 是从文件名解析的 UTC Date，.getHours() 等方法返回本地时间
+      const pStartOfDay = p.start.getHours() * 3600000 + p.start.getMinutes() * 60000 + p.start.getSeconds() * 1000 + p.start.getMilliseconds();
       const pEndOfDay = pStartOfDay + (p.end.getTime() - p.start.getTime());
-      // 绘制原始位置 + 前后各一圈
       for (let shift = -1; shift <= 1; shift++) {
         const x1 = this._offsetToX(pStartOfDay + shift * this.totalDuration);
         const x2 = this._offsetToX(pEndOfDay + shift * this.totalDuration);
@@ -275,12 +291,11 @@ const Timeline = {
       }
     }
 
-    // 绘制选中范围 — 红色高亮框，宽度 = duration 个时间片
+    // 绘制选中范围
     const selOffset = this._sliceToOffset(this.selectedSlice);
     const sliceW = (this.sliceDuration / this.viewDuration) * w;
     let selX = this._offsetToX(selOffset);
     const rangeW = sliceW * this.selectedDuration;
-    // 如果接近边界，也画相邻环
     if (selX + rangeW < 0) selX += (this.totalDuration / this.viewDuration) * w;
     if (selX > w) selX -= (this.totalDuration / this.viewDuration) * w;
 
@@ -294,7 +309,7 @@ const Timeline = {
       ctx.strokeRect(drawX, 0, drawW, h);
     }
 
-    // X轴刻度(每 10 分钟)
+    // X轴刻度（本地时间，每 10 分钟）
     ctx.fillStyle = '#556677';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
@@ -304,7 +319,9 @@ const Timeline = {
       const x = this._offsetToX(tOff);
       if (x < 0 || x > w) continue;
       const t = this._offsetToDate(tOff);
-      ctx.fillText(t.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }), x, h - 2);
+      const hh = String(t.getHours()).padStart(2, '0');
+      const mm = String(t.getMinutes()).padStart(2, '0');
+      ctx.fillText(`${hh}:${mm}`, x, h - 2);
       ctx.strokeStyle = '#445566';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -313,15 +330,21 @@ const Timeline = {
       ctx.stroke();
     }
 
-    // 顶部时间范围提示 + 选中时间
+    // 顶部时间范围提示（本地时间）
     ctx.fillStyle = '#8899aa';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
+    const fmtShort = ms => {
+      const dt = this._offsetToDate(ms);
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const mm = String(dt.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    };
     const selTime = this._offsetToDate(this._sliceToOffset(this.selectedSlice));
-    const viewStart = this._offsetToDate(this.viewOffset);
-    const viewEnd = this._offsetToDate(this.viewOffset + this.viewDuration);
+    const selhh = String(selTime.getHours()).padStart(2, '0');
+    const selmm = String(selTime.getMinutes()).padStart(2, '0');
     ctx.fillText(
-      `${viewStart.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} ~ ${viewEnd.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}  |  选中: ${selTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} +${this.selectedDuration}分钟`,
+      `${fmtShort(this.viewOffset)} ~ ${fmtShort(this.viewOffset + this.viewDuration)}  |  选中: ${selhh}:${selmm} +${this.selectedDuration}分钟`,
       8, 14
     );
   }

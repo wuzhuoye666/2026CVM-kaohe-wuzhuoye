@@ -1,153 +1,128 @@
 /**
  * FlameGraphView - 火焰图展示组件
- * 包含两条路径：
- *   1. SVG嵌入: fetch /api/flamegraph → innerHTML
- *   2. d3-flame-graph: fetch /api/flamegraph/data → d3渲染
+ * 使用 SVG 嵌入，flamegraph.pl 生成的 SVG 自带点击放大和搜索功能
+ * 核心：innerHTML 插入的 SVG 不会执行 <script>，需要手动提取执行
  */
 const FlameGraphView = {
-  _currentMode: 'svg',  // 'svg' or 'd3'
-  _d3Chart: null,
-  _loading: false,
-
-  // DOM 引用
-  _svgEl: null,
-  _d3El: null,
+  _viewEl: null,
   _loadingEl: null,
   _emptyEl: null,
   _errorEl: null,
   _errorMsg: null,
+  _searchInput: null,
 
   init() {
-    this._svgEl = document.getElementById('flamegraph-svg');
-    this._d3El = document.getElementById('flamegraph-d3');
+    this._viewEl = document.getElementById('flamegraph-view');
     this._loadingEl = document.getElementById('flamegraph-loading');
     this._emptyEl = document.getElementById('flamegraph-empty');
     this._errorEl = document.getElementById('flamegraph-error');
     this._errorMsg = document.getElementById('error-message');
+    this._searchInput = document.getElementById('search-input');
 
-    // 视图切换按钮
-    document.getElementById('btn-svg').addEventListener('click', () => this.switchMode('svg'));
-    document.getElementById('btn-d3').addEventListener('click', () => this.switchMode('d3'));
-
-    // 搜索功能（d3模式）
-    document.getElementById('search-btn').addEventListener('click', () => this._d3Search());
-    document.getElementById('search-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') this._d3Search();
+    document.getElementById('search-btn').addEventListener('click', () => this._search());
+    this._searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') this._search();
     });
-    document.getElementById('reset-zoom-btn').addEventListener('click', () => this._d3ResetZoom());
+    document.getElementById('reset-btn').addEventListener('click', () => this._reset());
 
-    // 初始显示空状态
     this._showStatus('empty');
   },
 
-  switchMode(mode) {
-    this._currentMode = mode;
-    document.getElementById('btn-svg').classList.toggle('active', mode === 'svg');
-    document.getElementById('btn-d3').classList.toggle('active', mode === 'd3');
-    document.getElementById('search-box').classList.toggle('hidden', mode !== 'd3');
-    this._svgEl.classList.toggle('hidden', mode !== 'svg');
-    this._d3El.classList.toggle('hidden', mode !== 'd3');
-  },
-
   async load(startISO, endISO) {
-    if (this._currentMode === 'svg') {
-      await this._loadSVG(startISO, endISO);
-    } else {
-      await this._loadD3(startISO, endISO);
-    }
-  },
-
-  // ---- SVG 路径 ----
-  async _loadSVG(startISO, endISO) {
     this._showStatus('loading');
     try {
-      const res = await API.fetch(`/api/flamegraph?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
+      const res = await API.fetch(
+        `/api/flamegraph?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`,
+        {},
+        { timeout: 120000, retries: 0 }
+      );
       if (res.status === 404) {
         this._showStatus('error', '该时间段无采样数据');
         return;
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      const svg = await res.text();
-      this._svgEl.innerHTML = svg;
-      this._showStatus('none');
-      this._svgEl.classList.remove('hidden');
-    } catch (e) {
-      this._showStatus('error', '加载失败: ' + e.message);
-    }
-  },
+      const svgText = await res.text();
 
-  // ---- d3-flame-graph 路径 ----
-  async _loadD3(startISO, endISO) {
-    this._showStatus('loading');
-    try {
-      const res = await API.fetch(`/api/flamegraph/data?start=${encodeURIComponent(startISO)}&end=${encodeURIComponent(endISO)}`);
-      if (res.status === 404) {
-        this._showStatus('error', '该时间段无采样数据');
-        return;
+      // 插入 SVG
+      this._viewEl.innerHTML = svgText;
+
+      // 关键：innerHTML 不会执行 <script>，手动提取并执行
+      const svgEl = this._viewEl.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.width = '100%';
+        svgEl.style.height = 'auto';
+        this._executeSvgScripts(svgEl);
       }
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      this._renderD3(data);
+      }
+
       this._showStatus('none');
-      this._d3El.classList.remove('hidden');
     } catch (e) {
       this._showStatus('error', '加载失败: ' + e.message);
     }
   },
 
-  _renderD3(data) {
-    // 清空旧图表
-    this._d3El.innerHTML = '';
-    document.getElementById('reset-zoom-btn').classList.add('hidden');
-
-    const width = this._d3El.clientWidth || 1000;
-    const chart = d3.flamegraph()
-      .width(width)
-      .cellHeight(18)
-      .minFrameSize(2)
-      .transitionDuration(300)
-      .sort(true)
-      .title('')
-      .tooltip(true)
-      .onClick(d => {
-        chart.resetZoom();
-        document.getElementById('reset-zoom-btn').classList.remove('hidden');
-        chart.zoomTo(d);
-      });
-
-    chart.colorMapper(function(d) {
-      // 给每个栈帧一个暖色调，模拟传统火焰图
-      const hash = d.data.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-      const r = 200 + (hash % 55);
-      const g = 50 + (hash % 80);
-      const b = 10 + (hash % 30);
-      return `rgb(${r},${g},${b})`;
+  // 提取 SVG 中的 <script> 标签内容并执行
+  _executeSvgScripts(svgEl) {
+    const scripts = svgEl.querySelectorAll('script');
+    scripts.forEach(script => {
+      const code = script.textContent || script.innerHTML;
+      if (code.trim()) {
+        try {
+          // 创建一个真正的 script 元素来执行代码
+          const realScript = document.createElement('script');
+          realScript.textContent = code;
+          document.head.appendChild(realScript);
+          // 执行后立即移除，代码已在全局作用域生效
+          document.head.removeChild(realScript);
+        } catch (e) {
+          console.warn('Failed to execute SVG script:', e);
+        }
+      }
     });
 
-    d3.select(this._d3El)
-      .datum(data)
-      .call(chart);
-
-    this._d3Chart = chart;
-  },
-
-  _d3Search() {
-    if (!this._d3Chart) return;
-    const term = document.getElementById('search-input').value.trim();
-    if (term) {
-      this._d3Chart.search(term);
-    } else {
-      this._d3Chart.clear();
+    // SVG 的 onload="init(evt)" 不会被触发，手动调用
+    const onloadAttr = svgEl.getAttribute('onload');
+    if (onloadAttr) {
+      try {
+        // 创建一个模拟的 evt 对象
+        const evt = { target: svgEl };
+        // 在全局作用域执行 onload
+        const fn = new Function('evt', onloadAttr);
+        fn(evt);
+      } catch (e) {
+        console.warn('Failed to execute SVG onload:', e);
+      }
     }
   },
 
-  _d3ResetZoom() {
-    if (!this._d3Chart) return;
-    this._d3Chart.resetZoom();
-    document.getElementById('reset-zoom-btn').classList.add('hidden');
+  // 搜索：调用 flamegraph.pl 内置的全局 search() 函数
+  _search() {
+    const term = this._searchInput.value.trim();
+    if (!term) { this._reset(); return; }
+    try {
+      if (typeof search === 'function') {
+        search(term);
+      }
+    } catch (e) {
+      console.warn('SVG search function not available');
+    }
   },
 
-  // ---- 状态管理 ----
+  // 重置放大和搜索
+  _reset() {
+    this._searchInput.value = '';
+    try {
+      if (typeof resetzoom === 'function') {
+        resetzoom(null);
+      } else if (typeof unzoom === 'function') {
+        unzoom(null);
+      }
+    } catch (e) {
+      // 如果脚本函数不可用，重新加载当前数据
+      console.warn('SVG resetzoom not available');
+    }
+  },
+
   _showStatus(type, msg) {
     this._loadingEl.classList.toggle('hidden', type !== 'loading');
     this._emptyEl.classList.toggle('hidden', type !== 'empty');
@@ -156,8 +131,7 @@ const FlameGraphView = {
       this._errorMsg.textContent = msg;
     }
     if (type === 'loading' || type === 'empty' || type === 'error') {
-      this._svgEl.classList.add('hidden');
-      this._d3El.classList.add('hidden');
+      this._viewEl.innerHTML = '';
     }
   }
 };

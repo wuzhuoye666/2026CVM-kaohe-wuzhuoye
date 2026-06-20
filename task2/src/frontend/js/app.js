@@ -14,7 +14,7 @@
       FlameGraphView.load(startISO, endISO);
     });
 
-    // 2.5 绑定跳转按钮
+    // 3. 绑定跳转按钮
     const jumpBtn = document.getElementById('jump-btn');
     const jumpInput = document.getElementById('jump-input');
     const rangeInput = document.getElementById('range-input');
@@ -22,7 +22,7 @@
       jumpBtn.addEventListener('click', () => {
         const duration = rangeInput ? parseInt(rangeInput.value, 10) : 1;
         if (!Timeline.jumpToTime(jumpInput.value, duration)) {
-          alert('请输入正确的时间格式，如 2026-06-11 03:00 或 03:00');
+          alert('请输入正确的时间格式，如 2026-06-18 03:00 或 03:00');
         }
       });
       jumpInput.addEventListener('keydown', e => {
@@ -30,10 +30,10 @@
       });
     }
 
-    // 3. 启动系统监控
+    // 4. 启动系统监控
     SystemMonitor.start(5000);
 
-    // 4. 定期刷新时间线数据 (每60秒)
+    // 5. 定期刷新时间线数据 (每60秒)
     setInterval(() => Timeline.loadProfiles(), 60000);
   });
 })();

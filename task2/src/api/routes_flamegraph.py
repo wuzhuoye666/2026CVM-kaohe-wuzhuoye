@@ -63,7 +63,9 @@ def get_flamegraph_svg():
 
     data_dir = current_app.config["DATA_DIR"]
     entries = find_profiles(start, end, data_dir=data_dir)
-    files = profile_paths(entries, data_dir)
+    # 过滤掉实际不存在的文件（metadata 可能残留过期条目）
+    valid_entries = [e for e in entries if Path(data_dir, e.get("file", "")).exists()]
+    files = profile_paths(valid_entries, data_dir)
 
     if not files:
         return jsonify({"error": f"No profile data found for {start} ~ {end}"}), 404
@@ -146,7 +148,9 @@ def get_flamegraph_data():
 
     data_dir = current_app.config["DATA_DIR"]
     entries = find_profiles(start, end, data_dir=data_dir)
-    files = profile_paths(entries, data_dir)
+    # 过滤掉实际不存在的文件
+    valid_entries = [e for e in entries if Path(data_dir, e.get("file", "")).exists()]
+    files = profile_paths(valid_entries, data_dir)
 
     if not files:
         return jsonify({"error": f"No profile data found for {start} ~ {end}"}), 404
@@ -183,7 +187,10 @@ def get_flamegraph_data():
     if not combined_folded:
         return jsonify({"error": "Failed to process profile data"}), 500
 
-    all_folded = "\n".join(combined_folded)
+    all_folded = "\n".join(combined_folded).strip()
+    if not all_folded:
+        return jsonify({"error": "Profile data contains no samples"}), 404
+
     tree = _parse_folded_to_tree(all_folded)
 
     return jsonify(tree)

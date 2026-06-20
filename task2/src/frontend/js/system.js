@@ -22,8 +22,16 @@ const SystemMonitor = {
   _render(d) {
     const badge = document.getElementById('collector-status');
     if (badge) {
-      badge.className = 'status-badge running';
-      badge.innerHTML = '&#9679; 运行中';
+      if (d.collector_status === 'running') {
+        badge.className = 'status-badge running';
+        badge.innerHTML = '&#9679; 运行中';
+      } else if (d.collector_status === 'degraded') {
+        badge.className = 'status-badge degraded';
+        badge.innerHTML = '&#9679; 降级';
+      } else {
+        badge.className = 'status-badge stopped';
+        badge.innerHTML = '&#9679; 离线';
+      }
     }
 
     const cpuEl = document.getElementById('cpu-value');

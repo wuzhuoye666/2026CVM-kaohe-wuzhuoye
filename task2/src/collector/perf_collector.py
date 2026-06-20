@@ -5,6 +5,7 @@ PerfCollector - 持续CPU Profiling采集模块
 """
 
 import argparse
+import json
 import logging
 import os
 import subprocess
@@ -23,6 +24,10 @@ logger = logging.getLogger("perf_collector")
 class PerfCollector:
     """持续执行 perf record 并按时间窗口分片保存。"""
 
+    # 连续失败计数器，用于判断采集器是否实质可用
+    _consecutive_failures = 0
+    _max_consecutive_failures = 5
+
     def __init__(self, output_dir: str, freq: int = 99, slice_sec: int = 60,
                  metadata_path: str | None = None):
         """
@@ -38,6 +43,8 @@ class PerfCollector:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         meta_path = metadata_path or str(self.output_dir / "metadata.json")
         self.metadata = MetadataStore(meta_path)
+        # 健康状态文件路径，供 API 检查采集器是否实质可用
+        self._health_path = self.output_dir / ".collector_health"
         # 初始化 psutil CPU 计数器，丢弃第一次无意义的返回值
         psutil.cpu_percent(interval=None)
 
@@ -60,6 +67,17 @@ class PerfCollector:
             if candidate.is_file():
                 return str(candidate)
         return None
+
+    def _write_health(self):
+        """写入采集器健康状态文件，供 API 层检查。"""
+        try:
+            status = "degraded" if self._consecutive_failures >= self._max_consecutive_failures else "ok"
+            self._health_path.write_text(
+                json.dumps({"status": status, "consecutive_failures": self._consecutive_failures}),
+                encoding="utf-8"
+            )
+        except OSError:
+            pass
 
     def run_one_slice(self) -> Path:
         """执行一次 perf record 采样切片，返回生成的文件路径。"""
@@ -93,7 +111,9 @@ class PerfCollector:
                 # perf record 在被SIGINT中断时返回128，这是正常的
                 stderr = result.stderr.decode(errors="replace")
                 logger.error("perf record failed (rc=%d): %s", result.returncode, stderr)
+                self._consecutive_failures += 1
             else:
+                self._consecutive_failures = 0
                 logger.info("Perf slice completed: %s (%.1f MB, cpu=%.1f%%)",
                             output_file.name,
                             output_file.stat().st_size / 1024 / 1024
@@ -101,13 +121,17 @@ class PerfCollector:
                             cpu_percent)
         except FileNotFoundError:
             logger.error("perf binary not found: %s", perf_bin)
+            self._consecutive_failures += 1
+            self._write_health()
             raise
         except Exception as e:
             logger.error("Unexpected error running perf: %s", e)
+            self._consecutive_failures += 1
+            self._write_health()
             raise
 
-        # 写入元数据
-        if output_file.exists():
+        # 写入元数据 (仅当文件非空时，空文件说明无有效采样数据)
+        if output_file.exists() and output_file.stat().st_size > 0:
             size_mb = output_file.stat().st_size / 1024 / 1024
             self.metadata.add_entry(
                 file_path=output_file.name,
@@ -116,6 +140,17 @@ class PerfCollector:
                 size_mb=size_mb,
                 cpu_percent=cpu_percent,
             )
+        else:
+            logger.warning("Perf slice produced empty data file, skipping metadata entry: %s",
+                           output_file.name)
+            # 清理空文件
+            if output_file.exists():
+                try:
+                    output_file.unlink()
+                except OSError:
+                    pass
+
+        self._write_health()
 
         return output_file
 
@@ -123,15 +158,19 @@ class PerfCollector:
         """持续循环执行采样切片，直到进程被终止。"""
         logger.info("PerfCollector started: output_dir=%s freq=%dHz slice=%ds",
                      self.output_dir, self.freq, self.slice_sec)
+        failure_backoff = 1  # 初始退避秒数
+        max_backoff = 300    # 最大退避 5 分钟
         while True:
             try:
                 self.run_one_slice()
+                failure_backoff = 1  # 成功时重置退避
             except KeyboardInterrupt:
                 logger.info("PerfCollector stopped by user")
                 break
             except Exception as e:
-                logger.error("Slice failed, continuing: %s", e)
-                time.sleep(1)  # 失败后短暂等待避免快速循环
+                logger.error("Slice failed, retrying in %ds: %s", failure_backoff, e)
+                time.sleep(failure_backoff)
+                failure_backoff = min(failure_backoff * 2, max_backoff)  # 指数退避
 
 
 def main():
